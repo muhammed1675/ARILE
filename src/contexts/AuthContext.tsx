@@ -4,6 +4,7 @@ import React, {
   useEffect,
   useState,
   ReactNode,
+  useCallback,
   useMemo } from
 'react';
 import type { Session, User } from '@supabase/supabase-js';
@@ -14,12 +15,18 @@ interface AuthContextValue {
   session: Session | null;
   loading: boolean;
   enabled: boolean;
+  /** True once we've checked the signed-in user's profile and it has no phone on file. */
+  needsPhone: boolean;
+  checkingProfile: boolean;
   signIn: (email: string, password: string) => Promise<{error: string | null;}>;
   signUp: (
   email: string,
   password: string,
-  fullName: string)
+  fullName: string,
+  phone: string)
   => Promise<{error: string | null;}>;
+  signInWithGoogle: () => Promise<{error: string | null;}>;
+  savePhone: (phone: string) => Promise<{error: string | null;}>;
   signOut: () => Promise<void>;
 }
 
@@ -28,6 +35,20 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export function AuthProvider({ children }: {children: ReactNode;}) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [needsPhone, setNeedsPhone] = useState(false);
+  const [checkingProfile, setCheckingProfile] = useState(false);
+
+  const refreshPhoneStatus = useCallback(async (userId: string) => {
+    if (!supabase) return;
+    setCheckingProfile(true);
+    const { data } = await supabase.
+    from('profiles').
+    select('phone').
+    eq('id', userId).
+    maybeSingle();
+    setNeedsPhone(!data?.phone);
+    setCheckingProfile(false);
+  }, []);
 
   useEffect(() => {
     if (!supabase) {
@@ -38,14 +59,17 @@ export function AuthProvider({ children }: {children: ReactNode;}) {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
       setLoading(false);
+      if (data.session?.user) refreshPhoneStatus(data.session.user.id);
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, next) => {
       setSession(next);
+      if (next?.user) refreshPhoneStatus(next.user.id);else
+      setNeedsPhone(false);
     });
 
     return () => listener.subscription.unsubscribe();
-  }, []);
+  }, [refreshPhoneStatus]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -53,26 +77,47 @@ export function AuthProvider({ children }: {children: ReactNode;}) {
       session,
       loading,
       enabled: isSupabaseConfigured,
+      needsPhone,
+      checkingProfile,
       signIn: async (email, password) => {
         if (!supabase) return { error: 'Accounts are not connected yet.' };
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         return { error: error?.message ?? null };
       },
-      signUp: async (email, password, fullName) => {
+      signUp: async (email, password, fullName, phone) => {
         if (!supabase) return { error: 'Accounts are not connected yet.' };
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { data: { full_name: fullName } }
+          options: { data: { full_name: fullName, phone } }
         });
         return { error: error?.message ?? null };
+      },
+      signInWithGoogle: async () => {
+        if (!supabase) return { error: 'Accounts are not connected yet.' };
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: { redirectTo: `${window.location.origin}/account` }
+        });
+        return { error: error?.message ?? null };
+      },
+      savePhone: async (phone) => {
+        if (!supabase) return { error: 'Accounts are not connected yet.' };
+        const userId = session?.user?.id;
+        if (!userId) return { error: 'You need to be signed in.' };
+        const { error } = await supabase.
+        from('profiles').
+        upsert({ id: userId, phone }, { onConflict: 'id' });
+        if (error) return { error: error.message };
+        setNeedsPhone(false);
+        return { error: null };
       },
       signOut: async () => {
         if (!supabase) return;
         await supabase.auth.signOut();
       }
     }),
-    [session, loading]
+    [session, loading, needsPhone, checkingProfile]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

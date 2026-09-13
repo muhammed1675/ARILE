@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { LogOut, Package, AlertCircle, Check } from 'lucide-react';
+import { LogOut, Package, AlertCircle, Check, Phone } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { getMyOrders } from '../lib/api';
@@ -21,32 +21,67 @@ const statusLabel: Record<string, string> = {
   cancelled: 'Cancelled'
 };
 
+// A permissive but real phone check: optional leading +, then 7-15 digits.
+// Loose on purpose — customers order from many countries — but blocks
+// obviously-empty or junk input so it's not a rubber-stamp requirement.
+const PHONE_PATTERN = /^\+?[0-9]{7,15}$/;
+
+function GoogleIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true">
+      <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l5.7-5.7C34.6 6 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z" />
+      <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.9 18.9 13 24 13c3.1 0 5.8 1.1 8 3l5.7-5.7C34.6 6 29.6 4 24 4c-7.4 0-13.8 4.1-17.1 10.1z" />
+      <path fill="#4CAF50" d="M24 44c5.5 0 10.4-1.9 14.3-5.1l-6.6-5.4C29.6 35.1 26.9 36 24 36c-5.2 0-9.6-3.3-11.2-7.9l-6.5 5C9.9 39.7 16.4 44 24 44z" />
+      <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.3-4.1 5.5l6.6 5.4C41.6 35.9 44 30.4 44 24c0-1.3-.1-2.7-.4-3.5z" />
+    </svg>);
+
+}
+
 function AuthPanel() {
-  const { signIn, signUp, enabled } = useAuth();
+  const { signIn, signUp, signInWithGoogle, enabled } = useAuth();
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [googleBusy, setGoogleBusy] = useState(false);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setBusy(true);
     setError(null);
     setNotice(null);
 
+    if (mode === 'signup' && !PHONE_PATTERN.test(phone.trim())) {
+      setError('Enter a valid phone number — digits only, 7 to 15 of them.');
+      return;
+    }
+
+    setBusy(true);
     const result =
     mode === 'signin' ?
     await signIn(email, password) :
-    await signUp(email, password, fullName);
+    await signUp(email, password, fullName, phone.trim());
 
     if (result.error) setError(result.error);else
     if (mode === 'signup')
     setNotice('Check your inbox to confirm your email, then sign in.');
 
     setBusy(false);
+  };
+
+  const continueWithGoogle = async () => {
+    setError(null);
+    setGoogleBusy(true);
+    const result = await signInWithGoogle();
+    if (result.error) {
+      setError(result.error);
+      setGoogleBusy(false);
+    }
+    // On success the browser is redirected to Google, so no further
+    // state update happens here.
   };
 
   return (
@@ -68,7 +103,23 @@ function AuthPanel() {
         </p>
       }
 
-      <form onSubmit={submit} className="mt-8 space-y-5">
+      <button
+        type="button"
+        onClick={continueWithGoogle}
+        disabled={googleBusy || !enabled}
+        className="mt-8 flex w-full items-center justify-center gap-3 border border-line bg-canvas py-3.5 text-xs uppercase tracking-widest text-ink transition-colors duration-200 hover:border-accent disabled:cursor-not-allowed disabled:opacity-45">
+        
+        <GoogleIcon />
+        {googleBusy ? 'Redirecting…' : 'Continue with Google'}
+      </button>
+
+      <div className="mt-6 flex items-center gap-4">
+        <div className="h-px flex-1 bg-line" />
+        <span className="text-[10px] uppercase tracking-widest text-subtle">Or</span>
+        <div className="h-px flex-1 bg-line" />
+      </div>
+
+      <form onSubmit={submit} className="mt-6 space-y-5">
         {mode === 'signup' &&
         <div>
             <label htmlFor="a-name" className="mb-2 block text-[10px] uppercase tracking-widest text-subtle">
@@ -99,6 +150,27 @@ function AuthPanel() {
             autoComplete="email" />
           
         </div>
+
+        {mode === 'signup' &&
+        <div>
+            <label htmlFor="a-phone" className="mb-2 block text-[10px] uppercase tracking-widest text-subtle">
+              Phone number
+            </label>
+            <input
+            id="a-phone"
+            type="tel"
+            required
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            className={inputClass}
+            placeholder="+234 800 000 0000"
+            autoComplete="tel" />
+          
+            <p className="mt-2 text-[11px] font-light text-subtle">
+              Required — we use this to reach you about your order.
+            </p>
+          </div>
+        }
 
         <div>
           <label htmlFor="a-password" className="mb-2 block text-[10px] uppercase tracking-widest text-subtle">
@@ -152,9 +224,92 @@ function AuthPanel() {
 
 }
 
+/**
+ * Google sign-in never collects a phone number, so anyone who lands here
+ * without one on file is blocked from the rest of the account page until
+ * they add it. Email/password sign-up already requires it above, so this
+ * only ever triggers for Google users (or older accounts predating this).
+ */
+function RequirePhonePanel() {
+  const { savePhone, signOut } = useAuth();
+  const [phone, setPhone] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    if (!PHONE_PATTERN.test(phone.trim())) {
+      setError('Enter a valid phone number — digits only, 7 to 15 of them.');
+      return;
+    }
+
+    setBusy(true);
+    const result = await savePhone(phone.trim());
+    if (result.error) setError(result.error);
+    setBusy(false);
+  };
+
+  return (
+    <div className="mx-auto max-w-md">
+      <div className="mx-auto grid h-12 w-12 place-items-center rounded-full border border-line text-accent">
+        <Phone size={19} strokeWidth={1.5} />
+      </div>
+      <h1 className="mt-5 text-center font-serif text-[2rem] leading-none sm:text-4xl">
+        One last thing
+      </h1>
+      <p className="mt-3 text-center text-sm font-light leading-relaxed text-muted">
+        Add a phone number to finish setting up your account — we use this to reach you
+        about your order.
+      </p>
+
+      <form onSubmit={submit} className="mt-8 space-y-5">
+        <div>
+          <label htmlFor="rp-phone" className="mb-2 block text-[10px] uppercase tracking-widest text-subtle">
+            Phone number
+          </label>
+          <input
+            id="rp-phone"
+            type="tel"
+            required
+            autoFocus
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            className={inputClass}
+            placeholder="+234 800 000 0000"
+            autoComplete="tel" />
+          
+        </div>
+
+        {error &&
+        <p className="flex items-start gap-2.5 border border-danger/40 bg-danger/5 p-4 text-sm text-danger">
+            <AlertCircle size={16} strokeWidth={1.5} className="mt-0.5 shrink-0" />
+            {error}
+          </p>
+        }
+
+        <Button type="submit" size="lg" fullWidth disabled={busy}>
+          {busy ? 'Saving…' : 'Save and continue'}
+        </Button>
+      </form>
+
+      <p className="mt-6 text-center text-xs text-muted">
+        <button
+          type="button"
+          onClick={signOut}
+          className="text-accent underline-offset-4 transition-opacity duration-200 hover:opacity-75 hover:underline">
+          
+          Sign out instead
+        </button>
+      </p>
+    </div>);
+
+}
+
 export function Account() {
   usePageMeta(`Account — ${SITE.name}`);
-  const { user, loading, signOut } = useAuth();
+  const { user, loading, needsPhone, checkingProfile, signOut } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
 
@@ -167,7 +322,7 @@ export function Account() {
     });
   }, [user]);
 
-  if (loading) {
+  if (loading || (user && checkingProfile)) {
     return (
       <div className="mx-auto max-w-container px-5 py-40 md:px-10">
         <div className="mx-auto h-8 w-48 animate-pulse bg-surface-2" />
@@ -179,6 +334,14 @@ export function Account() {
     return (
       <div className="mx-auto max-w-container px-5 pb-24 pt-32 md:px-10 md:pt-40">
         <AuthPanel />
+      </div>);
+
+  }
+
+  if (needsPhone) {
+    return (
+      <div className="mx-auto max-w-container px-5 pb-24 pt-32 md:px-10 md:pt-40">
+        <RequirePhonePanel />
       </div>);
 
   }

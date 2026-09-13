@@ -30,9 +30,13 @@ const columns = [
   { label: 'Contact us', to: '/contact' },
   { label: 'Shipping & returns', to: '/contact#shipping' },
   { label: 'Your account', to: '/account' },
-  { label: 'Track an order', to: '/account' }]
+  { label: 'Track an order', to: '/track-order' }]
 
 }];
+
+const legalLinks = [
+{ label: 'Privacy Policy', to: '/privacy-policy' },
+{ label: 'Terms & Conditions', to: '/terms-conditions' }];
 
 
 export function Footer() {
@@ -129,19 +133,25 @@ export function Footer() {
             </nav>
           )}
 
-          <div>
+          <div className="min-w-0">
             <h3 className="mb-5 text-[10px] uppercase tracking-widest text-subtle">Visit</h3>
             <address className="space-y-3 not-italic text-sm font-light text-muted">
-              <p>{SITE.address}</p>
+              <p className="break-words">{SITE.address}</p>
               <p>{SITE.hours}</p>
               <a
-                href={`mailto:${SITE.email}`}
+                href={`tel:${SITE.phone.replace(/\s+/g, '')}`}
                 className="block transition-colors duration-200 hover:text-accent">
+                
+                {SITE.phone}
+              </a>
+              <a
+                href={`mailto:${SITE.email}`}
+                className="block break-all transition-colors duration-200 hover:text-accent">
                 
                 {SITE.email}
               </a>
             </address>
-            <ul className="mt-5 flex gap-4">
+            <ul className="mt-5 flex flex-wrap gap-x-4 gap-y-2">
               {SITE.socials.map((s) =>
               <li key={s.label}>
                   <a
@@ -159,8 +169,22 @@ export function Footer() {
         </div>
 
         {/* Legal row */}
-        <div className="flex flex-col gap-4 border-t border-line pt-8 text-[10px] uppercase tracking-widest text-subtle md:flex-row md:items-center md:justify-between">
-          <p>© {new Date().getFullYear()} {SITE.name} · Lagos, Nigeria</p>
+        <div className="flex flex-col gap-5 border-t border-line pt-8 text-[10px] uppercase tracking-widest text-subtle md:flex-row md:flex-wrap md:items-center md:justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-6 sm:gap-y-2">
+            <p className="shrink-0">© {new Date().getFullYear()} {SITE.name} · Lagos, Nigeria</p>
+            <ul className="flex flex-wrap gap-x-6 gap-y-2">
+              {legalLinks.map((link) =>
+              <li key={link.to}>
+                  <Link
+                  to={link.to}
+                  className="transition-colors duration-200 hover:text-accent">
+                  
+                    {link.label}
+                  </Link>
+                </li>
+              )}
+            </ul>
+          </div>
           <p className="font-serif text-xs italic tracking-normal text-accent">{SITE.motto}</p>
           <a
             href={SITE.builder.href}

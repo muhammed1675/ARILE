@@ -40,7 +40,10 @@ Everything below is finished and wired up. You only supply credentials.
 | `/cart` | Full bag |
 | `/checkout` | Checkout — customer details, order summary, pay |
 | `/order/:reference` | Order confirmation with live payment verification |
-| `/account` | Sign in / sign up, order history |
+| `/track-order` | Look up any order by its reference — no account needed |
+| `/account` | Sign in / sign up (email or Google), order history |
+| `/privacy-policy` | Privacy policy |
+| `/terms-conditions` | Terms & conditions |
 | `*` | 404 |
 
 **Features**
@@ -121,6 +124,33 @@ Refresh the site. The shop is now reading from Supabase instead of the bundled f
 
 - For testing, switch **Confirm email** off so you can sign in immediately
 - For production, leave it on and set your **Site URL** under **Authentication → URL Configuration**
+
+### 3.6 Turn on Google sign-in
+
+The account page has a "Continue with Google" button already wired to Supabase — you
+just need to switch the provider on.
+
+1. In [Google Cloud Console](https://console.cloud.google.com/), create (or reuse) a
+   project → **APIs & Services → Credentials → Create Credentials → OAuth client ID**
+   → type **Web application**.
+2. Under **Authorized redirect URIs**, add:
+   ```
+   https://<your-project-ref>.supabase.co/auth/v1/callback
+   ```
+3. Copy the **Client ID** and **Client Secret** Google gives you.
+4. In Supabase: **Authentication → Providers → Google** → toggle it on, paste the
+   Client ID and Client Secret, **Save**.
+5. Under **Authentication → URL Configuration**, make sure **Site URL** (and, once you
+   have one, **Redirect URLs**) points at your real deployed domain — Google sends
+   people back through Supabase, then Supabase redirects them to `/account` on
+   whatever Site URL is configured there.
+
+**About the phone number:** Google doesn't hand over a phone number, but every
+account on this storefront needs one. So a customer who signs up with Google is
+dropped on a one-field "add your phone number" screen right after their first
+sign-in, before they can see the rest of `/account`. Email/password sign-up collects
+it directly in the sign-up form instead, so those customers never see that extra
+screen.
 
 ---
 

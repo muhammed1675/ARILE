@@ -60,17 +60,41 @@
   --c-danger: 168 58 48;
   color-scheme: light;
 }
+/*
+ * Horizontal-overflow guard.
+ *
+ * `overflow-x: hidden` on `body` alone is not enough on mobile Safari and
+ * Chrome: if anything anywhere on the page is even a pixel wider than the
+ * viewport (a stray min-width, an untruncated long word, a transform), the
+ * *document* (html) still becomes horizontally scrollable even though body
+ * itself is clipped. That's what produces the exact symptoms of "extra
+ * space on the right when I pinch-zoom" and "the page rubber-bands
+ * sideways when I scroll with one finger" — the browser is honoring a
+ * horizontal scroll range that shouldn't exist. Locking it down on both
+ * `html` and `body`, plus the app's root mount node, closes that gap.
+ * `overscroll-behavior-x: none` additionally turns off the elastic bounce
+ * effect itself as a second line of defence.
+ */
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
+  width: 100%;
 }
 body {
   background-color: rgb(var(--c-canvas));
   color: rgb(var(--c-ink));
   font-family: 'Inter', system-ui, sans-serif;
   overflow-x: hidden;
+  overscroll-behavior-x: none;
+  width: 100%;
+  max-width: 100%;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   transition: background-color 0.5s ease, color 0.5s ease;
+}
+#root {
+  overflow-x: hidden;
+  width: 100%;
 }
 ::selection {
   background-color: rgb(var(--c-accent));

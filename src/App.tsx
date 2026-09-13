@@ -19,7 +19,10 @@ import { Contact } from './pages/Contact';
 import { Cart } from './pages/Cart';
 import { Checkout } from './pages/Checkout';
 import { OrderSuccess } from './pages/OrderSuccess';
+import { TrackOrder } from './pages/TrackOrder';
 import { Account } from './pages/Account';
+import { PrivacyPolicy } from './pages/PrivacyPolicy';
+import { TermsConditions } from './pages/TermsConditions';
 import { NotFound } from './pages/NotFound';
 import { AdminGuard } from './admin/AdminGuard';
 import { AdminLayout } from './admin/AdminLayout';
@@ -91,7 +94,10 @@ export function App() {
                 <Route path="cart" element={<Cart />} />
                 <Route path="checkout" element={<Checkout />} />
                 <Route path="order/:reference" element={<OrderSuccess />} />
+                <Route path="track-order" element={<TrackOrder />} />
                 <Route path="account" element={<Account />} />
+                <Route path="privacy-policy" element={<PrivacyPolicy />} />
+                <Route path="terms-conditions" element={<TermsConditions />} />
                 <Route path="*" element={<NotFound />} />
               </Route>
             </Routes>

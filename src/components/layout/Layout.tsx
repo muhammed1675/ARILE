@@ -23,7 +23,7 @@ function ScrollToTop() {
 
 export function Layout() {
   return (
-    <div className="flex min-h-screen flex-col bg-canvas text-ink">
+    <div className="flex min-h-screen w-full flex-col overflow-x-hidden bg-canvas text-ink">
       <ScrollToTop />
       <a
         href="#main"
