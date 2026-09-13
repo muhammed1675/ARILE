@@ -1,44 +1,39 @@
 /**
  * Safe environment access.
  *
- * `import.meta.env` only exists under a Vite build. In a plain browser
- * preview, a test runner, or an SSR pass it can be undefined entirely —
- * reading a property off it throws before the app ever renders. Every
- * lookup here is guarded so a missing env object degrades to seed data
- * instead of a white screen.
+ * IMPORTANT: Vite statically replaces literal `import.meta.env.VITE_XXX`
+ * expressions at build time — it textually scans for that exact dotted
+ * pattern and inlines the value. It does NOT support dynamic/bracket
+ * access like `import.meta.env[key]`, because there's no way to know
+ * which key you mean until runtime, by which point the object no longer
+ * carries custom VITE_* keys in the production bundle. Each variable
+ * must therefore be referenced by its literal name, not looked up
+ * through a helper that takes the key as an argument.
+ *
+ * The try/catch still guards against `import.meta` being unavailable in
+ * non-Vite runtimes (SSR, Jest, a plain browser preview) — the getter is
+ * just a static literal expression, not a dynamic lookup.
  */
-function readEnv(key: string): string | undefined {
-  // Vite (and most modern bundlers)
+function safe<T>(getter: () => T | undefined): T | undefined {
   try {
-    const meta = import.meta as unknown as {env?: Record<string, string | undefined>;};
-    const value = meta?.env?.[key];
-    if (value) return value;
+    return getter();
   } catch {
-
-    /* import.meta unavailable in this runtime */}
-
-  // Node / Jest / SSR
-  try {
-    const proc = (globalThis as {process?: {env?: Record<string, string | undefined>;};}).
-    process;
-    const value = proc?.env?.[key];
-    if (value) return value;
-  } catch {
-
-    /* process unavailable */}
-
-  // Runtime injection, e.g. a <script>window.__ENV__ = {...}</script> in index.html
-  try {
-    const injected = (globalThis as {__ENV__?: Record<string, string | undefined>;}).
-    __ENV__;
-    const value = injected?.[key];
-    if (value) return value;
-  } catch {
-
-    /* no injected config */}
-
-  return undefined;
+    return undefined;
+  }
 }
 
-export const SUPABASE_URL = readEnv('VITE_SUPABASE_URL');
-export const SUPABASE_ANON_KEY = readEnv('VITE_SUPABASE_ANON_KEY');
+const fromWindowEnv = (key: string): string | undefined =>
+safe(() => (globalThis as {__ENV__?: Record<string, string | undefined>;}).__ENV__?.[key]);
+
+const fromProcessEnv = (key: string): string | undefined =>
+safe(() => (globalThis as {process?: {env?: Record<string, string | undefined>;};}).process?.env?.[key]);
+
+export const SUPABASE_URL: string | undefined =
+safe(() => import.meta.env.VITE_SUPABASE_URL) ||
+fromProcessEnv('VITE_SUPABASE_URL') ||
+fromWindowEnv('VITE_SUPABASE_URL');
+
+export const SUPABASE_ANON_KEY: string | undefined =
+safe(() => import.meta.env.VITE_SUPABASE_ANON_KEY) ||
+fromProcessEnv('VITE_SUPABASE_ANON_KEY') ||
+fromWindowEnv('VITE_SUPABASE_ANON_KEY');
