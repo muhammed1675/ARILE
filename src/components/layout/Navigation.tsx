@@ -80,7 +80,7 @@ export function Navigation() {
             )}
           </ul>
 
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             <ThemeToggle variant={solid ? 'default' : 'onPhoto'} />
 
             <Link

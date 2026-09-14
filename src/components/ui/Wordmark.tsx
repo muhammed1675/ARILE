@@ -11,9 +11,9 @@ interface WordmarkProps {
 }
 
 const sizeMap = {
-  sm: 'text-lg',
-  md: 'text-2xl',
-  lg: 'text-3xl'
+  sm: 'text-base sm:text-lg',
+  md: 'text-lg sm:text-2xl',
+  lg: 'text-xl sm:text-3xl'
 };
 
 const toneMap = {
@@ -23,10 +23,10 @@ const toneMap = {
 
 export function Wordmark({ size = 'md', withMotto = false, asLink = true, tone = 'default' }: WordmarkProps) {
   const content =
-  <span className="flex flex-col leading-none">
+  <span className="flex shrink-0 flex-col whitespace-nowrap leading-none">
       <span className={`font-serif tracking-brand ${sizeMap[size]}`}>{SITE.name}</span>
       {withMotto &&
-    <span className="mt-1.5 text-[9px] tracking-widest uppercase text-muted">
+    <span className="mt-1.5 whitespace-normal text-[9px] tracking-widest uppercase text-muted">
           {SITE.motto}
         </span>
     }
@@ -36,7 +36,7 @@ export function Wordmark({ size = 'md', withMotto = false, asLink = true, tone =
   if (!asLink) return content;
 
   return (
-    <Link to="/" className={`transition-colors duration-200 ${toneMap[tone]}`}>
+    <Link to="/" className={`shrink-0 transition-colors duration-200 ${toneMap[tone]}`}>
       {content}
     </Link>);
 
