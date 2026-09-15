@@ -1,15 +1,17 @@
 import React, { useEffect } from 'react';
-import { ShoppingBag, X } from 'lucide-react';
+import { ExternalLink, LogOut, ShoppingBag, X } from 'lucide-react';
 import { SITE } from '../../../data/site';
 import { classNames } from '../../../lib/format';
 import { NavigationList } from './NavigationList';
 
 export function MobileNavDrawer({
   open,
-  onClose
+  onClose,
+  onSignOut
 }: {
   open: boolean;
   onClose: () => void;
+  onSignOut: () => void;
 }) {
   // Lock body scroll while the drawer is open, and allow Escape to close it.
   useEffect(() => {
@@ -67,6 +69,29 @@ export function MobileNavDrawer({
           </button>
         </div>
         <NavigationList onNavigate={onClose} />
+
+        <div className="mt-auto space-y-1 border-t border-dash-border pt-4">
+          <a
+            href="/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium text-dash-muted-fg transition-colors duration-150 hover:bg-dash-muted hover:text-dash-fg"
+          >
+            <ExternalLink className="h-[17px] w-[17px] shrink-0" strokeWidth={1.75} />
+            View storefront
+          </a>
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              onSignOut();
+            }}
+            className="flex h-10 w-full items-center gap-3 rounded-lg px-3 text-left text-sm font-medium text-dash-muted-fg transition-colors duration-150 hover:bg-red-50 hover:text-dash-destructive"
+          >
+            <LogOut className="h-[17px] w-[17px] shrink-0" strokeWidth={1.75} />
+            Sign out
+          </button>
+        </div>
       </div>
     </div>
   );

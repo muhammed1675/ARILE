@@ -167,21 +167,39 @@ export function AdminOverview() {
             <div className="h-[240px] w-full" role="img" aria-label="Monthly revenue chart">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={chartData} margin={{ top: 5, right: 8, left: 0, bottom: 0 }}>
-                  <CartesianGrid stroke="#e5e7eb" strokeDasharray="3 6" vertical={false} />
-                  <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#a1a1aa' }} dy={8} />
-                  <YAxis width={52} axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#a1a1aa' }} tickFormatter={formatCompactNaira} />
+                  <CartesianGrid stroke="rgb(var(--dash-border))" strokeDasharray="3 6" vertical={false} />
+                  <XAxis
+                    dataKey="label"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 11, fill: 'rgb(var(--dash-muted-fg))' }}
+                    dy={8}
+                  />
+                  <YAxis
+                    width={52}
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 10, fill: 'rgb(var(--dash-muted-fg))' }}
+                    tickFormatter={formatCompactNaira}
+                  />
                   <Tooltip
                     formatter={(value: number) => [formatNaira(value), 'Revenue']}
-                    contentStyle={{ borderRadius: 8, borderColor: '#e4e4e7', fontSize: 12 }}
+                    contentStyle={{
+                      borderRadius: 8,
+                      borderColor: 'rgb(var(--dash-border))',
+                      backgroundColor: 'rgb(var(--dash-surface))',
+                      color: 'rgb(var(--dash-fg))',
+                      fontSize: 12
+                    }}
                   />
                   <Area
                     type="monotone"
                     dataKey="revenue"
-                    stroke="#181818"
+                    stroke="rgb(var(--dash-fg))"
                     strokeWidth={2}
-                    fill="#181818"
+                    fill="rgb(var(--dash-fg))"
                     fillOpacity={0.06}
-                    activeDot={{ r: 4, fill: '#181818', stroke: '#fff', strokeWidth: 2 }}
+                    activeDot={{ r: 4, fill: 'rgb(var(--dash-fg))', stroke: 'rgb(var(--dash-surface))', strokeWidth: 2 }}
                   />
                 </AreaChart>
               </ResponsiveContainer>

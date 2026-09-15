@@ -274,9 +274,10 @@ supabase functions deploy create-payment      --no-verify-jwt
 supabase functions deploy verify-payment      --no-verify-jwt
 supabase functions deploy send-enquiry-email  --no-verify-jwt
 supabase functions deploy korapay-webhook     --no-verify-jwt
+supabase functions deploy send-newsletter     --no-verify-jwt
 ```
 
-`--no-verify-jwt` is required: guests check out without an account, and Korapay's webhook has no Supabase session.
+`--no-verify-jwt` is required: guests check out without an account, and Korapay's webhook has no Supabase session. `send-newsletter` still does its own auth check inside the function — it reads the caller's access token and confirms `profiles.is_admin` before sending anything, so `--no-verify-jwt` here just means Supabase's platform-level gate is off, not that the endpoint is open.
 
 ### 6.4 Verify
 
@@ -351,7 +352,7 @@ subdomain later if it's worth the DNS change.
 - [ ] `schema.sql` run, `seed.sql` run
 - [ ] `.env` has both `VITE_` Supabase values
 - [ ] All five Edge Function secrets set
-- [ ] All four functions deployed
+- [ ] All five functions deployed
 - [ ] Korapay webhook URL registered and saved
 - [ ] Resend domain verified, test email received
 - [ ] Swapped `sk_test_` → `sk_live_` in `KORAPAY_SECRET_KEY`
@@ -468,6 +469,7 @@ supabase/
     create-payment/         Opens a Korapay charge
     verify-payment/         Confirms payment, sends receipts
     send-enquiry-email/     Contact & bespoke notifications
+    send-newsletter/        Admin → subscribers email blast (Resend)
     korapay-webhook/        Signed server-to-server confirmation
 ```
 

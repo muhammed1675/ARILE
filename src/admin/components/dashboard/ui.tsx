@@ -44,12 +44,15 @@ export function CardTitle({ children, className }: { children: React.ReactNode; 
 
 type BadgeTone = 'neutral' | 'success' | 'warning' | 'destructive' | 'accent';
 
+// Tinted via opacity modifiers on the dash-* tokens (rather than fixed
+// Tailwind shades like `bg-green-50`) so every tone stays legible in both
+// the light and dark admin themes instead of only the light one.
 const badgeTones: Record<BadgeTone, string> = {
   neutral: 'bg-dash-muted text-dash-fg border-dash-border',
-  success: 'bg-green-50 text-dash-success border-green-200',
-  warning: 'bg-amber-50 text-dash-warning border-amber-200',
-  destructive: 'bg-red-50 text-dash-destructive border-red-200',
-  accent: 'bg-[#f6efe2] text-dash-accent border-[#e7d8b8]'
+  success: 'bg-dash-success/10 text-dash-success border-dash-success/25',
+  warning: 'bg-dash-warning/10 text-dash-warning border-dash-warning/25',
+  destructive: 'bg-dash-destructive/10 text-dash-destructive border-dash-destructive/25',
+  accent: 'bg-dash-accent/10 text-dash-accent border-dash-accent/25'
 };
 
 export function Badge({

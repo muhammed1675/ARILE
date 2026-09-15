@@ -1,5 +1,5 @@
-import { supabase, isSupabaseConfigured } from './supabase';
-import { Enquiry, Order, OrderStatus, Product } from '../types';
+import { supabase, isSupabaseConfigured, functionsUrl } from './supabase';
+import { Enquiry, NewsletterSubscriber, Order, OrderStatus, Product } from '../types';
 import { ApiResult } from './api';
 
 export const backendReady = isSupabaseConfigured;
@@ -248,4 +248,72 @@ export async function adminSetEnquiryHandled(id: string, handled: boolean): Prom
   const { error } = await supabase.from('enquiries').update({ handled }).eq('id', id);
   if (error) return { ok: false, message: error.message };
   return { ok: true };
+}
+
+/* ------------------------------------------------------------------ */
+/* Newsletter subscribers                                              */
+/* ------------------------------------------------------------------ */
+
+function mapSubscriber(row: any): NewsletterSubscriber {
+  return {
+    id: row.id,
+    email: row.email,
+    createdAt: row.created_at
+  };
+}
+
+export async function adminGetSubscribers(): Promise<ApiResult<NewsletterSubscriber[]>> {
+  if (!supabase) return { ok: false, message: 'Connect Supabase to see subscribers.' };
+
+  const { data, error } = await supabase.
+  from('newsletter_subscribers').
+  select('*').
+  order('created_at', { ascending: false });
+
+  if (error) return { ok: false, message: error.message };
+  return { ok: true, data: (data ?? []).map(mapSubscriber) };
+}
+
+export interface SendNewsletterPayload {
+  subject: string;
+  message: string;
+}
+
+/**
+ * Invokes the `send-newsletter` Edge Function, which re-checks (server-side,
+ * against the caller's own access token) that the requester is an admin
+ * before emailing every subscriber via Resend — the anon key alone is never
+ * enough to authorize a bulk send.
+ */
+export async function adminSendNewsletter(
+  payload: SendNewsletterPayload
+): Promise<ApiResult<{ sent: number }>> {
+  if (!supabase) return { ok: false, message: 'Connect Supabase first.' };
+
+  const endpoint = functionsUrl('send-newsletter');
+  if (!endpoint) return { ok: false, message: 'Newsletter sending is not configured.' };
+
+  const { data: sessionData } = await supabase.auth.getSession();
+  const accessToken = sessionData.session?.access_token;
+  if (!accessToken) return { ok: false, message: 'Your session has expired — sign in again.' };
+
+  try {
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`
+      },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+
+    if (!res.ok) return { ok: false, message: data?.message ?? 'Could not send the newsletter.' };
+    return { ok: true, data: { sent: data.sent ?? 0 } };
+  } catch (error) {
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : 'Network error sending the newsletter.'
+    };
+  }
 }

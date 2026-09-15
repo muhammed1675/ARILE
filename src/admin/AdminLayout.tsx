@@ -5,6 +5,7 @@ import { DashboardHeader } from './components/dashboard/DashboardHeader';
 import { MobileNavDrawer } from './components/dashboard/MobileNavDrawer';
 import { Sidebar } from './components/dashboard/Sidebar';
 import { adminNavItems } from './components/dashboard/nav';
+import { useAdminTheme } from './hooks/useAdminTheme';
 
 function pageTitleFor(pathname: string) {
   const match = [...adminNavItems].reverse().find((item) =>
@@ -17,15 +18,20 @@ export function AdminLayout() {
   const { user, signOut } = useAuth();
   const location = useLocation();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const { theme, toggleTheme } = useAdminTheme();
 
   const title = pageTitleFor(location.pathname);
   const subtitle =
     title === 'Overview' ? 'Here\u2019s what\u2019s happening with your store today.' : undefined;
 
   return (
-    <div className="admin-dash min-h-screen bg-dash-bg text-dash-fg">
+    <div className="admin-dash min-h-screen bg-dash-bg text-dash-fg" data-theme={theme}>
       <Sidebar onSignOut={signOut} />
-      <MobileNavDrawer open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
+      <MobileNavDrawer
+        open={mobileNavOpen}
+        onClose={() => setMobileNavOpen(false)}
+        onSignOut={signOut}
+      />
 
       <div className="flex min-h-screen min-w-0 flex-col lg:pl-[232px]">
         <DashboardHeader
@@ -34,6 +40,8 @@ export function AdminLayout() {
           email={user?.email}
           onSignOut={signOut}
           onOpenMenu={() => setMobileNavOpen(true)}
+          theme={theme}
+          onToggleTheme={toggleTheme}
         />
 
         <main className="flex-1 overflow-x-hidden p-4 sm:p-6 lg:p-8">

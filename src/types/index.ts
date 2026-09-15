@@ -89,3 +89,9 @@ export interface Enquiry {
   handled: boolean;
   createdAt: string;
 }
+
+export interface NewsletterSubscriber {
+  id: string;
+  email: string;
+  createdAt: string;
+}

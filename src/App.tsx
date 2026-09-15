@@ -34,6 +34,7 @@ import { AdminOverview } from './admin/pages/AdminOverview';
 import { AdminOrders } from './admin/pages/AdminOrders';
 import { AdminProducts } from './admin/pages/AdminProducts';
 import { AdminEnquiries } from './admin/pages/AdminEnquiries';
+import { AdminSubscribers } from './admin/pages/AdminSubscribers';
 
 // Every image the storefront can show on first paint — hero, atelier and
 // fabric shots plus every product and gallery photo. Defined once at module
@@ -85,6 +86,7 @@ export function App() {
                     <Route path="orders" element={<AdminOrders />} />
                     <Route path="products" element={<AdminProducts />} />
                     <Route path="enquiries" element={<AdminEnquiries />} />
+                    <Route path="subscribers" element={<AdminSubscribers />} />
                     <Route path="*" element={<Navigate to="/admin" replace />} />
                   </Route>
 

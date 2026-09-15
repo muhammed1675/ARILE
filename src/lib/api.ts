@@ -18,11 +18,14 @@ export async function subscribeToNewsletter(email: string): Promise<ApiResult> {
     return { ok: true };
   }
 
+  // Deliberately no `.select()` here — anonymous visitors are only granted an
+  // INSERT policy on this table (see `newsletter_insert_any` in schema.sql),
+  // not SELECT, so asking PostgREST to return the inserted row makes it run
+  // an implicit select that RLS then rejects with 401, even though the write
+  // itself succeeded. We only need to know whether the insert worked.
   const { error } = await supabase.
   from('newsletter_subscribers').
-  insert({ email }).
-  select().
-  single();
+  insert({ email });
 
   if (error) {
     // Unique violation means they're already subscribed — treat as success.

@@ -81,7 +81,7 @@ export function AddressesTab() {
     await updateAddress(editingId as string, form);
 
     setSaving(false);
-    if (result.error || !result.ok) {
+    if (!result.ok) {
       toast.error(result.message ?? 'Could not save that address.');
       return;
     }

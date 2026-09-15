@@ -67,7 +67,8 @@
    so it gets its own variable set under .admin-dash rather than
    overriding --c-* (which would also re-theme the storefront).
    =========================================================== */
-.admin-dash {
+.admin-dash,
+.admin-dash[data-theme='light'] {
   --dash-bg: 250 250 250;
   --dash-surface: 255 255 255;
   --dash-surface-2: 244 244 245;
@@ -84,6 +85,31 @@
   --dash-warning: 202 138 4;
   --dash-ring: 168 131 66;
   color-scheme: light;
+}
+
+/* Admin dashboard — dark mode, toggled via DashboardHeader (see useAdminTheme).
+   Scoped to [data-theme='dark'] on the .admin-dash root rather than <html>,
+   so it never touches the storefront's own light/dark tokens above. */
+.admin-dash[data-theme='dark'] {
+  --dash-bg: 20 20 22;
+  --dash-surface: 30 30 33;
+  --dash-surface-2: 39 39 43;
+  --dash-border: 55 55 60;
+  --dash-fg: 244 244 245;
+  --dash-muted: 39 39 43;
+  --dash-muted-fg: 161 161 170;
+  --dash-primary: 244 244 245;
+  --dash-primary-fg: 24 24 27;
+  --dash-accent: 201 169 97;
+  --dash-accent-fg: 24 24 27;
+  --dash-destructive: 248 113 113;
+  --dash-success: 74 222 128;
+  --dash-warning: 250 204 21;
+  --dash-ring: 201 169 97;
+  color-scheme: dark;
+}
+.admin-dash {
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 /*

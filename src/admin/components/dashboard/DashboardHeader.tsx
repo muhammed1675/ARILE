@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { CalendarDays, LogOut, Menu, UserRound } from 'lucide-react';
+import { CalendarDays, LogOut, Menu, Moon, Sun, UserRound } from 'lucide-react';
 import { classNames } from '../../../lib/format';
 
 export function DashboardHeader({
@@ -7,13 +7,17 @@ export function DashboardHeader({
   subtitle,
   email,
   onSignOut,
-  onOpenMenu
+  onOpenMenu,
+  theme,
+  onToggleTheme
 }: {
   title: string;
   subtitle?: string;
   email?: string | null;
   onSignOut: () => void;
   onOpenMenu: () => void;
+  theme: 'light' | 'dark';
+  onToggleTheme: () => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -64,6 +68,20 @@ export function DashboardHeader({
           <CalendarDays className="h-4 w-4 text-dash-muted-fg" aria-hidden="true" />
           {today}
         </div>
+
+        <button
+          type="button"
+          onClick={onToggleTheme}
+          aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-dash-border text-dash-muted-fg transition-colors duration-200 hover:border-dash-accent hover:text-dash-accent"
+        >
+          {theme === 'dark' ? (
+            <Sun className="h-4 w-4" strokeWidth={1.75} />
+          ) : (
+            <Moon className="h-4 w-4" strokeWidth={1.75} />
+          )}
+        </button>
 
         <div className="relative" ref={menuRef}>
           <button

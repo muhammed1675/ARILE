@@ -19,15 +19,27 @@ import { PRODUCTS as SEED_PRODUCTS } from '../../data/products';
 import { ProductForm } from '../components/ProductForm';
 import { Badge, Card } from '../components/dashboard/ui';
 
-function Toggle({ on, onChange, label }: { on: boolean; onChange: () => void; label: string }) {
+function Toggle({
+  on,
+  onChange,
+  label,
+  pending
+}: {
+  on: boolean;
+  onChange: () => void;
+  label: string;
+  pending?: boolean;
+}) {
   return (
     <button
       type="button"
       role="switch"
       aria-checked={on}
       aria-label={label}
+      aria-busy={pending || undefined}
+      disabled={pending}
       onClick={onChange}
-      className={`relative h-5 w-9 shrink-0 rounded-full border transition-colors duration-200 ${
+      className={`relative h-5 w-9 shrink-0 rounded-full border transition-colors duration-200 disabled:cursor-wait disabled:opacity-70 ${
         on ? 'border-dash-accent bg-dash-accent' : 'border-dash-border bg-dash-muted'
       }`}
     >
@@ -48,6 +60,20 @@ export function AdminProducts() {
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<AdminProduct | null | 'new'>(null);
   const [saving, setSaving] = useState(false);
+  // Tracks in-flight toggle requests as `${productId}:active` / `${productId}:featured`
+  // so a switch disables itself and shows a wait cursor for the ~200-400ms round trip
+  // instead of looking clickable while a previous click is still being written —
+  // and so a second rapid click can't race the first click's revert-on-error.
+  const [pendingToggles, setPendingToggles] = useState<Set<string>>(new Set());
+
+  const setTogglePending = (key: string, isPending: boolean) => {
+    setPendingToggles((current) => {
+      const next = new Set(current);
+      if (isPending) next.add(key);
+      else next.delete(key);
+      return next;
+    });
+  };
 
   const load = () => {
     if (!backendReady) {
@@ -65,21 +91,29 @@ export function AdminProducts() {
   useEffect(load, []);
 
   const toggleActive = async (p: AdminProduct) => {
+    const key = `${p.id}:active`;
+    if (pendingToggles.has(key)) return;
+    setTogglePending(key, true);
     setProducts((list) => list.map((x) => (x.id === p.id ? { ...x, isActive: !x.isActive } : x)));
     const result = await adminSetProductActive(p.id, !p.isActive);
     if (!result.ok) {
       setProducts((list) => list.map((x) => (x.id === p.id ? { ...x, isActive: p.isActive } : x)));
       toast.error(result.message ?? 'Could not update the product.');
     }
+    setTogglePending(key, false);
   };
 
   const toggleFeatured = async (p: AdminProduct) => {
+    const key = `${p.id}:featured`;
+    if (pendingToggles.has(key)) return;
+    setTogglePending(key, true);
     setProducts((list) => list.map((x) => (x.id === p.id ? { ...x, featured: !x.featured } : x)));
     const result = await adminSetProductFeatured(p.id, !p.featured);
     if (!result.ok) {
       setProducts((list) => list.map((x) => (x.id === p.id ? { ...x, featured: p.featured } : x)));
       toast.error(result.message ?? 'Could not update the product.');
     }
+    setTogglePending(key, false);
   };
 
   const submitForm = async (payload: ProductFormPayload) => {
@@ -198,11 +232,11 @@ export function AdminProducts() {
                     </div>
                     <div className="mt-3 flex items-center gap-4">
                       <label className="flex items-center gap-2 text-xs text-dash-muted-fg">
-                        <Toggle on={p.featured} label={`Feature ${p.name}`} onChange={() => backendReady && toggleFeatured(p as AdminProduct)} />
+                        <Toggle on={p.featured} label={`Feature ${p.name}`} pending={pendingToggles.has(`${p.id}:featured`)} onChange={() => backendReady && toggleFeatured(p as AdminProduct)} />
                         Featured
                       </label>
                       <label className="flex items-center gap-2 text-xs text-dash-muted-fg">
-                        <Toggle on={p.isActive} label={`Activate ${p.name}`} onChange={() => backendReady && toggleActive(p as AdminProduct)} />
+                        <Toggle on={p.isActive} label={`Activate ${p.name}`} pending={pendingToggles.has(`${p.id}:active`)} onChange={() => backendReady && toggleActive(p as AdminProduct)} />
                         Active
                       </label>
                     </div>
@@ -246,10 +280,10 @@ export function AdminProducts() {
                       </Badge>
                     </td>
                     <td className="px-5 py-3">
-                      <Toggle on={p.featured} label={`Feature ${p.name}`} onChange={() => backendReady && toggleFeatured(p as AdminProduct)} />
+                      <Toggle on={p.featured} label={`Feature ${p.name}`} pending={pendingToggles.has(`${p.id}:featured`)} onChange={() => backendReady && toggleFeatured(p as AdminProduct)} />
                     </td>
                     <td className="px-5 py-3">
-                      <Toggle on={p.isActive} label={`Activate ${p.name}`} onChange={() => backendReady && toggleActive(p as AdminProduct)} />
+                      <Toggle on={p.isActive} label={`Activate ${p.name}`} pending={pendingToggles.has(`${p.id}:active`)} onChange={() => backendReady && toggleActive(p as AdminProduct)} />
                     </td>
                     <td className="px-5 py-3">
                       <div className="flex justify-end gap-1.5">
