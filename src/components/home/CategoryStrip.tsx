@@ -30,13 +30,21 @@ const categories = [
   to: '/shop?category=accessories',
   image: "/3ded09ea-eab3-437a-945a-4a8a47e9c886.jpg"
 
+},
+{
+  label: 'Adire Fabric',
+  note: 'Sold by the yard',
+  to: '/shop?category=fabric',
+  // Placeholder — swap for an actual adire-fabric photo once you have one shot.
+  image: "/2c26e6ec-4b93-4983-8df2-fef1ede5672f.jpg"
+
 }];
 
 
 export function CategoryStrip() {
   return (
     <section className="border-y border-line bg-surface">
-      <Stagger className="mx-auto grid max-w-container grid-cols-2 lg:grid-cols-4">
+      <Stagger className="mx-auto grid max-w-container grid-cols-2 lg:grid-cols-5">
         {categories.map((cat) =>
         <RevealItem key={cat.label}>
             <Link

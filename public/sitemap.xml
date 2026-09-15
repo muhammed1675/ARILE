@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Static sitemap covering every storefront route plus the seed catalogue's
+  product pages. Product URLs are generated from data/products.ts (or your
+  live `products` table once populated) — if you add or remove pieces,
+  update the <url> entries below to match, or swap this for a build-time
+  generated sitemap once the catalogue is large enough to make that worth
+  automating. Update the domain in every <loc> once you're on the real
+  domain, not arile.vercel.app.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://arile.vercel.app/</loc><priority>1.0</priority></url>
+  <url><loc>https://arile.vercel.app/shop</loc><priority>0.9</priority></url>
+  <url><loc>https://arile.vercel.app/story</loc><priority>0.6</priority></url>
+  <url><loc>https://arile.vercel.app/gallery</loc><priority>0.5</priority></url>
+  <url><loc>https://arile.vercel.app/bespoke</loc><priority>0.7</priority></url>
+  <url><loc>https://arile.vercel.app/contact</loc><priority>0.5</priority></url>
+  <url><loc>https://arile.vercel.app/track-order</loc><priority>0.3</priority></url>
+  <url><loc>https://arile.vercel.app/privacy-policy</loc><priority>0.2</priority></url>
+  <url><loc>https://arile.vercel.app/terms-conditions</loc><priority>0.2</priority></url>
+
+  <url><loc>https://arile.vercel.app/shop/adewale-royal-agbada</loc><priority>0.8</priority></url>
+  <url><loc>https://arile.vercel.app/shop/oluwaseun-indigo-agbada</loc><priority>0.8</priority></url>
+  <url><loc>https://arile.vercel.app/shop/oluwadara-obsidian-agbada</loc><priority>0.8</priority></url>
+  <url><loc>https://arile.vercel.app/shop/bamidele-sand-kaftan</loc><priority>0.8</priority></url>
+  <url><loc>https://arile.vercel.app/shop/ifeoluwa-buba-sokoto</loc><priority>0.8</priority></url>
+  <url><loc>https://arile.vercel.app/shop/ayanfe-iro-buba</loc><priority>0.8</priority></url>
+  <url><loc>https://arile.vercel.app/shop/fila-oba-burgundy</loc><priority>0.8</priority></url>
+</urlset>

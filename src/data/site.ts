@@ -1,5 +1,8 @@
 export const SITE = {
   name: 'ARÍLÉ',
+  // Update once the real domain is live — used in robots.txt, sitemap.xml,
+  // and canonical/Open Graph tags. Using the Vercel URL as a safe default.
+  url: 'https://arile.vercel.app',
   motto: 'African wear, timeless you.',
   tagline: 'Handcrafted African wear from Lagos',
   description:

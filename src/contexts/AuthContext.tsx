@@ -27,6 +27,9 @@ interface AuthContextValue {
   => Promise<{error: string | null;}>;
   signInWithGoogle: () => Promise<{error: string | null;}>;
   savePhone: (phone: string) => Promise<{error: string | null;}>;
+  updateProfile: (fullName: string, phone: string) => Promise<{error: string | null;}>;
+  changePassword: (newPassword: string) => Promise<{error: string | null;}>;
+  requestPasswordReset: (email: string) => Promise<{error: string | null;}>;
   signOut: () => Promise<void>;
 }
 
@@ -111,6 +114,29 @@ export function AuthProvider({ children }: {children: ReactNode;}) {
         if (error) return { error: error.message };
         setNeedsPhone(false);
         return { error: null };
+      },
+      updateProfile: async (fullName, phone) => {
+        if (!supabase) return { error: 'Accounts are not connected yet.' };
+        const userId = session?.user?.id;
+        if (!userId) return { error: 'You need to be signed in.' };
+        const { error } = await supabase.
+        from('profiles').
+        upsert({ id: userId, full_name: fullName, phone }, { onConflict: 'id' });
+        if (error) return { error: error.message };
+        setNeedsPhone(!phone);
+        return { error: null };
+      },
+      changePassword: async (newPassword) => {
+        if (!supabase) return { error: 'Accounts are not connected yet.' };
+        const { error } = await supabase.auth.updateUser({ password: newPassword });
+        return { error: error?.message ?? null };
+      },
+      requestPasswordReset: async (email) => {
+        if (!supabase) return { error: 'Accounts are not connected yet.' };
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/reset-password`
+        });
+        return { error: error?.message ?? null };
       },
       signOut: async () => {
         if (!supabase) return;

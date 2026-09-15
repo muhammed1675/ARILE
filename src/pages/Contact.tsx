@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { MessageCircle, Mail, MapPin, Clock, Check, AlertCircle } from 'lucide-react';
 import { usePageMeta } from '../hooks/usePageMeta';
+import { useToast } from '../contexts/ToastContext';
 import { SITE } from '../data/site';
 import { submitEnquiry } from '../lib/api';
 import { Reveal } from '../components/ui/Reveal';
@@ -38,6 +39,7 @@ export function Contact() {
   const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
   const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
   const [error, setError] = useState('');
+  const toast = useToast();
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,7 +48,9 @@ export function Contact() {
     if (result.ok) setStatus('done');else
     {
       setStatus('error');
-      setError(result.message ?? 'Could not send that just now.');
+      const msg = result.message ?? 'Could not send that just now.';
+      setError(msg);
+      toast.error(msg);
     }
   };
 

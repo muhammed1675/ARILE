@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Check, Minus, Plus, Ruler, Truck, MessageCircle } from 'lucide-react';
+import { ArrowLeft, Check, Minus, Plus, Ruler, Truck, MessageCircle, Heart } from 'lucide-react';
 import { useProduct, useProducts } from '../hooks/useProducts';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { useCart } from '../contexts/CartContext';
+import { useAuth } from '../contexts/AuthContext';
+import { useWishlist } from '../contexts/WishlistContext';
+import { useToast } from '../contexts/ToastContext';
 import { formatNaira } from '../lib/format';
 import { SITE } from '../data/site';
 import { Button } from '../components/ui/Button';
@@ -16,6 +19,10 @@ export function ProductDetail() {
   const { product, loading } = useProduct(slug);
   const { products } = useProducts();
   const { addItem } = useCart();
+  const { user } = useAuth();
+  const { isWishlisted, toggle } = useWishlist();
+  const toast = useToast();
+  const navigate = useNavigate();
 
   const [size, setSize] = useState('');
   const [color, setColor] = useState('');
@@ -143,6 +150,27 @@ export function ProductDetail() {
               {product.name}
             </h1>
             <p className="mt-2 font-serif text-lg italic text-muted">“{product.meaning}”</p>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (!user) {
+                  toast.info('Sign in to save pieces to your wishlist.');
+                  navigate('/account');
+                  return;
+                }
+                toggle(product.id);
+              }}
+              aria-pressed={isWishlisted(product.id)}
+              className="mt-4 inline-flex items-center gap-2 text-[11px] uppercase tracking-widest text-muted transition-colors duration-200 hover:text-accent">
+              
+              <Heart
+                size={15}
+                strokeWidth={1.75}
+                className={isWishlisted(product.id) ? 'fill-accent text-accent' : ''} />
+              
+              {isWishlisted(product.id) ? 'Saved to wishlist' : 'Save to wishlist'}
+            </button>
 
             <div className="mt-6 flex items-baseline gap-3">
               <span className="font-serif text-3xl tabular-nums">

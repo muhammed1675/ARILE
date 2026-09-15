@@ -1,16 +1,22 @@
 import React, { useEffect, useState } from 'react';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Plus, Pencil, Trash2 } from 'lucide-react';
 import {
   AdminProduct,
+  ProductFormPayload,
   adminGetProducts,
   adminSetProductActive,
   adminSetProductFeatured,
+  adminCreateProduct,
+  adminUpdateProduct,
+  adminDeleteProduct,
   backendReady } from
 '../../lib/admin-api';
 import { formatNaira } from '../../lib/format';
 import { usePageMeta } from '../../hooks/usePageMeta';
+import { useToast } from '../../contexts/ToastContext';
 import { SITE } from '../../data/site';
 import { PRODUCTS as SEED_PRODUCTS } from '../../data/products';
+import { ProductForm } from '../components/ProductForm';
 
 function Toggle({ on, onChange, label }: {on: boolean;onChange: () => void;label: string;}) {
   return (
@@ -35,28 +41,34 @@ function Toggle({ on, onChange, label }: {on: boolean;onChange: () => void;label
 
 export function AdminProducts() {
   usePageMeta(`Products — ${SITE.name} Admin`);
+  const toast = useToast();
   const [products, setProducts] = useState<AdminProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [editing, setEditing] = useState<AdminProduct | null | 'new'>(null);
+  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
+  const load = () => {
     if (!backendReady) {
       setLoading(false);
       return;
     }
+    setLoading(true);
     adminGetProducts().then((res) => {
       if (res.ok && res.data) setProducts(res.data);else
       setError(res.message ?? 'Could not load products.');
       setLoading(false);
     });
-  }, []);
+  };
+
+  useEffect(load, []);
 
   const toggleActive = async (p: AdminProduct) => {
     setProducts((list) => list.map((x) => x.id === p.id ? { ...x, isActive: !x.isActive } : x));
     const result = await adminSetProductActive(p.id, !p.isActive);
     if (!result.ok) {
       setProducts((list) => list.map((x) => x.id === p.id ? { ...x, isActive: p.isActive } : x));
-      setError(result.message ?? 'Could not update the product.');
+      toast.error(result.message ?? 'Could not update the product.');
     }
   };
 
@@ -65,13 +77,66 @@ export function AdminProducts() {
     const result = await adminSetProductFeatured(p.id, !p.featured);
     if (!result.ok) {
       setProducts((list) => list.map((x) => x.id === p.id ? { ...x, featured: p.featured } : x));
-      setError(result.message ?? 'Could not update the product.');
+      toast.error(result.message ?? 'Could not update the product.');
     }
   };
 
+  const submitForm = async (payload: ProductFormPayload) => {
+    setSaving(true);
+    const result =
+    editing === 'new' ?
+    await adminCreateProduct(payload) :
+    await adminUpdateProduct(payload);
+    setSaving(false);
+
+    if (!result.ok) {
+      toast.error(result.message ?? 'Could not save that piece.');
+      return;
+    }
+    toast.success(editing === 'new' ? 'Piece added to the catalogue.' : 'Piece updated.');
+    setEditing(null);
+    load();
+  };
+
+  const remove = async (p: AdminProduct) => {
+    if (!window.confirm(`Remove "${p.name}" from the catalogue? This can't be undone.`)) {
+      return;
+    }
+    const result = await adminDeleteProduct(p.id);
+    if (!result.ok) {
+      toast.error(result.message ?? 'Could not remove that piece.');
+      return;
+    }
+    toast.success('Piece removed.');
+    load();
+  };
+
+  if (editing) {
+    return (
+      <ProductForm
+        editing={editing === 'new' ? null : editing}
+        onCancel={() => setEditing(null)}
+        onSubmit={submitForm}
+        saving={saving} />);
+
+
+  }
+
   return (
     <div>
-      <h1 className="font-serif text-2xl">Products</h1>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <h1 className="font-serif text-2xl">Products</h1>
+        {backendReady &&
+        <button
+          type="button"
+          onClick={() => setEditing('new')}
+          className="inline-flex items-center gap-2 bg-accent px-4 py-2.5 text-[11px] uppercase tracking-widest text-accent-ink transition-opacity duration-200 hover:opacity-90">
+          
+            <Plus size={14} strokeWidth={1.75} />
+            New piece
+          </button>
+        }
+      </div>
 
       {!backendReady &&
       <p className="mt-4 flex items-start gap-2.5 border border-line bg-surface-2 p-4 text-[13px] font-light leading-relaxed text-muted">
@@ -96,7 +161,7 @@ export function AdminProducts() {
         </div> :
 
       <div className="mt-6 overflow-x-auto border border-line">
-          <table className="w-full min-w-[640px] border-collapse text-sm">
+          <table className="w-full min-w-[720px] border-collapse text-sm">
             <thead>
               <tr className="border-b border-line bg-surface text-left text-[10px] uppercase tracking-widest text-subtle">
                 <th className="px-4 py-3 font-normal">Piece</th>
@@ -105,6 +170,7 @@ export function AdminProducts() {
                 <th className="px-4 py-3 font-normal">Availability</th>
                 <th className="px-4 py-3 font-normal">Featured</th>
                 <th className="px-4 py-3 font-normal">Active</th>
+                <th className="px-4 py-3 font-normal text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -139,17 +205,34 @@ export function AdminProducts() {
                     onChange={() => backendReady && toggleActive(p as AdminProduct)} />
                   
                   </td>
+                  <td className="px-4 py-3">
+                    <div className="flex justify-end gap-1.5">
+                      <button
+                    type="button"
+                    disabled={!backendReady}
+                    onClick={() => setEditing(p as AdminProduct)}
+                    aria-label={`Edit ${p.name}`}
+                    className="grid h-8 w-8 place-items-center rounded-full border border-line text-muted transition-colors duration-200 hover:border-accent hover:text-accent disabled:opacity-40">
+                    
+                        <Pencil size={13} strokeWidth={1.5} />
+                      </button>
+                      <button
+                    type="button"
+                    disabled={!backendReady}
+                    onClick={() => remove(p as AdminProduct)}
+                    aria-label={`Delete ${p.name}`}
+                    className="grid h-8 w-8 place-items-center rounded-full border border-line text-muted transition-colors duration-200 hover:border-danger hover:text-danger disabled:opacity-40">
+                    
+                        <Trash2 size={13} strokeWidth={1.5} />
+                      </button>
+                    </div>
+                  </td>
                 </tr>
             )}
             </tbody>
           </table>
         </div>
       }
-
-      <p className="mt-6 text-[11px] text-subtle">
-        Adding a new piece or editing fabric, images and variants is still done from the
-        Supabase Table Editor — see <code>setup.md</code> § Managing the catalogue.
-      </p>
     </div>);
 
 }

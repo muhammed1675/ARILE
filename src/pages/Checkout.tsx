@@ -1,12 +1,14 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Lock, AlertCircle, ShieldCheck } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { formatNaira, generateReference } from '../lib/format';
-import { createOrder } from '../lib/api';
+import { createOrder, getMyAddresses } from '../lib/api';
 import { initialisePayment } from '../lib/korapay';
+import { isSupabaseConfigured } from '../lib/supabase';
 import { SITE, NIGERIAN_STATES } from '../data/site';
 import { CustomerDetails } from '../types';
 import { Button } from '../components/ui/Button';
@@ -64,6 +66,27 @@ export function Checkout() {
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const toast = useToast();
+
+  // Prefill from the customer's default saved address, if they have one —
+  // one less form to fill in on a repeat order.
+  useEffect(() => {
+    if (!user) return;
+    getMyAddresses(user.id).then((res) => {
+      if (!res.ok || !res.data) return;
+      const def = res.data.find((a) => a.isDefault) ?? res.data[0];
+      if (!def) return;
+      setCustomer((c) => ({
+        ...c,
+        fullName: c.fullName || def.fullName,
+        phone: c.phone || def.phone,
+        address: c.address || def.address,
+        city: c.city || def.city,
+        state: def.state || c.state,
+        country: def.country || c.country
+      }));
+    });
+  }, [user]);
 
   const shipping = customer.state === 'Lagos' ? 0 : NATIONAL_SHIPPING;
   const total = subtotal + shipping;
@@ -102,7 +125,9 @@ export function Checkout() {
     });
 
     if (!orderResult.ok) {
-      setError(orderResult.message ?? 'Could not save your order.');
+      const msg = orderResult.message ?? 'Could not save your order.';
+      setError(msg);
+      toast.error(msg);
       setSubmitting(false);
       return;
     }
@@ -114,9 +139,20 @@ export function Checkout() {
       return;
     }
 
-    // Preview mode / payment unavailable — still confirm so the flow is testable.
-    clearCart();
-    navigate(`/order/${reference}?preview=1`, { replace: true });
+    if (!isSupabaseConfigured) {
+      // Preview mode — no payment backend to talk to, so confirm so the
+      // flow stays testable. This never runs once Korapay is live.
+      clearCart();
+      navigate(`/order/${reference}?preview=1`, { replace: true });
+      return;
+    }
+
+    // A live payment attempt genuinely failed — do NOT fake success.
+    const paymentMsg =
+    payment.message ?? 'Could not start payment. Please try again.';
+    setError(paymentMsg);
+    toast.error(paymentMsg);
+    setSubmitting(false);
   };
 
   if (lines.length === 0) {

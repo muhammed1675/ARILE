@@ -120,6 +120,98 @@ export async function adminSetProductFeatured(id: string, featured: boolean): Pr
   return { ok: true };
 }
 
+export interface ProductFormPayload {
+  id: string;
+  slug: string;
+  name: string;
+  meaning: string;
+  category: Product['category'];
+  price: number;
+  compareAtPrice: number | null;
+  images: string[];
+  fabric: string;
+  embroidery: string;
+  occasion: string;
+  description: string;
+  colors: string[];
+  variants: {size: string;stock: number;}[];
+  availability: Product['availability'];
+  leadTime: string;
+  featured: boolean;
+  isActive: boolean;
+}
+
+function toRow(p: ProductFormPayload) {
+  return {
+    id: p.id,
+    slug: p.slug,
+    name: p.name,
+    meaning: p.meaning,
+    category: p.category,
+    price: p.price,
+    compare_at_price: p.compareAtPrice,
+    currency: 'NGN',
+    images: p.images,
+    fabric: p.fabric,
+    embroidery: p.embroidery,
+    occasion: p.occasion,
+    description: p.description,
+    colors: p.colors,
+    variants: p.variants,
+    availability: p.availability,
+    lead_time: p.leadTime,
+    featured: p.featured,
+    is_active: p.isActive
+  };
+}
+
+export async function adminCreateProduct(payload: ProductFormPayload): Promise<ApiResult> {
+  if (!supabase) return { ok: false, message: 'Connect Supabase first.' };
+
+  const { error } = await supabase.from('products').insert(toRow(payload));
+  if (error) return { ok: false, message: error.message };
+  return { ok: true };
+}
+
+export async function adminUpdateProduct(payload: ProductFormPayload): Promise<ApiResult> {
+  if (!supabase) return { ok: false, message: 'Connect Supabase first.' };
+
+  const { error } = await supabase.
+  from('products').
+  update(toRow(payload)).
+  eq('id', payload.id);
+  if (error) return { ok: false, message: error.message };
+  return { ok: true };
+}
+
+export async function adminDeleteProduct(id: string): Promise<ApiResult> {
+  if (!supabase) return { ok: false, message: 'Connect Supabase first.' };
+
+  const { error } = await supabase.from('products').delete().eq('id', id);
+  if (error) return { ok: false, message: error.message };
+  return { ok: true };
+}
+
+/**
+ * Uploads to the `products` Storage bucket (see setup.md §8 — create it,
+ * set it Public, before this will work) and returns its public URL.
+ */
+export async function adminUploadProductImage(file: File): Promise<ApiResult<string>> {
+  if (!supabase) return { ok: false, message: 'Connect Supabase first.' };
+
+  const ext = file.name.split('.').pop() || 'jpg';
+  const path = `${crypto.randomUUID()}.${ext}`;
+
+  const { error } = await supabase.storage.from('products').upload(path, file, {
+    cacheControl: '3600',
+    upsert: false
+  });
+  if (error) return { ok: false, message: error.message };
+
+  const { data } = supabase.storage.from('products').getPublicUrl(path);
+  return { ok: true, data: data.publicUrl };
+}
+
 /* ------------------------------------------------------------------ */
 /* Enquiries                                                           */
 /* ------------------------------------------------------------------ */

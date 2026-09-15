@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Check, AlertCircle } from 'lucide-react';
 import { usePageMeta } from '../hooks/usePageMeta';
+import { useToast } from '../contexts/ToastContext';
 import { SITE, ATELIER_IMAGE } from '../data/site';
 import { formatNaira } from '../lib/format';
 import { submitEnquiry } from '../lib/api';
@@ -68,6 +69,7 @@ export function Bespoke() {
   });
   const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
   const [error, setError] = useState('');
+  const toast = useToast();
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,7 +87,9 @@ export function Bespoke() {
       setStatus('done');
     } else {
       setStatus('error');
-      setError(result.message ?? 'Could not send that just now.');
+      const msg = result.message ?? 'Could not send that just now.';
+      setError(msg);
+      toast.error(msg);
     }
   };
 

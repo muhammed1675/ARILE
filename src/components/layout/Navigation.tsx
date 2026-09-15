@@ -37,10 +37,10 @@ export function Navigation() {
     <>
       <header
         className={classNames(
-          'fixed inset-x-0 top-0 z-40 transition-[background-color,border-color,padding] duration-300 ease-lux',
+          'fixed inset-x-0 top-0 z-40 transition-[background-color,border-color,padding,box-shadow] duration-300 ease-lux',
           solid ?
-          'bg-canvas/92 backdrop-blur-md border-b border-line py-3.5' :
-          'bg-transparent border-b border-transparent py-5'
+          'border-b border-line bg-canvas py-3.5 shadow-sm' :
+          'border-b border-transparent bg-gradient-to-b from-black/45 via-black/10 to-transparent py-5'
         )}>
         
         <nav

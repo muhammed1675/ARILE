@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { AlertCircle, LockKeyhole } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAdminAuth } from '../hooks/useAdminAuth';
+import { useToast } from '../../contexts/ToastContext';
 import { usePageMeta } from '../../hooks/usePageMeta';
 import { SITE } from '../../data/site';
 import { Button } from '../../components/ui/Button';
@@ -15,6 +16,7 @@ export function AdminLogin() {
   usePageMeta(`Admin — ${SITE.name}`);
   const { user, loading, enabled, signIn } = useAuth();
   const { resolved, isAdmin } = useAdminAuth();
+  const toast = useToast();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -35,7 +37,10 @@ export function AdminLogin() {
     setBusy(true);
     setError(null);
     const result = await signIn(email, password);
-    if (result.error) setError(result.error);
+    if (result.error) {
+      setError(result.error);
+      toast.error(result.error);
+    }
     setBusy(false);
   };
 

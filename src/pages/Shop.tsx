@@ -18,7 +18,7 @@ const SORT_OPTIONS: {value: SortKey;label: string;}[] = [
 { value: 'name', label: 'Alphabetical' }];
 
 
-const CATEGORIES = ['all', 'agbada', 'kaftan', 'buba', 'womens', 'accessories'];
+const CATEGORIES = ['all', 'agbada', 'kaftan', 'buba', 'womens', 'accessories', 'fabric'];
 
 export function Shop() {
   usePageMeta(`Shop — ${SITE.name}`, 'Browse handcrafted agbada, kaftan, buba and ceremonial African wear from the ARÍLÉ atelier in Lagos.');
@@ -80,7 +80,7 @@ export function Shop() {
       </header>
 
       {/* Filter bar */}
-      <div className="sticky top-[3.75rem] z-20 border-y border-line bg-canvas/94 backdrop-blur-md md:top-[4.25rem]">
+      <div className="sticky top-[3.75rem] z-20 border-y border-line bg-canvas md:top-[4.25rem]">
         <div className="mx-auto flex max-w-container items-center justify-between gap-4 px-5 py-3 md:px-10">
           {/* Desktop categories */}
           <nav aria-label="Filter by category" className="hidden items-center gap-1 md:flex">

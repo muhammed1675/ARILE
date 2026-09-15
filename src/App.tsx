@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { CartProvider } from './contexts/CartContext';
 import { AuthProvider } from './contexts/AuthContext';
+import { WishlistProvider } from './contexts/WishlistContext';
+import { ToastProvider } from './contexts/ToastContext';
 import { Layout } from './components/layout/Layout';
 import { Preloader } from './components/ui/Preloader';
 import { useAssetPreloader } from './hooks/useAssetPreloader';
@@ -23,6 +25,7 @@ import { TrackOrder } from './pages/TrackOrder';
 import { Account } from './pages/Account';
 import { PrivacyPolicy } from './pages/PrivacyPolicy';
 import { TermsConditions } from './pages/TermsConditions';
+import { ResetPassword } from './pages/ResetPassword';
 import { NotFound } from './pages/NotFound';
 import { AdminGuard } from './admin/AdminGuard';
 import { AdminLayout } from './admin/AdminLayout';
@@ -60,50 +63,55 @@ export function App() {
 
   return (
     <ThemeProvider>
-      <AuthProvider>
-        <CartProvider>
-          {showPreloader && <Preloader progress={progress} hide={done} />}
-          <BrowserRouter>
-            <Routes>
-              {/* Admin dashboard — separate shell, no storefront nav/footer/cart */}
-              <Route path="admin/login" element={<AdminLogin />} />
-              <Route
-                path="admin"
-                element={
-                <AdminGuard>
-                    <AdminLayout />
-                  </AdminGuard>
-                }>
-                
-                <Route index element={<Navigate to="orders" replace />} />
-                <Route path="orders" element={<AdminOrders />} />
-                <Route path="products" element={<AdminProducts />} />
-                <Route path="enquiries" element={<AdminEnquiries />} />
-                <Route path="*" element={<Navigate to="orders" replace />} />
-              </Route>
+      <ToastProvider>
+        <AuthProvider>
+          <WishlistProvider>
+            <CartProvider>
+              {showPreloader && <Preloader progress={progress} hide={done} />}
+              <BrowserRouter>
+                <Routes>
+                  {/* Admin dashboard — separate shell, no storefront nav/footer/cart */}
+                  <Route path="admin/login" element={<AdminLogin />} />
+                  <Route
+                    path="admin"
+                    element={
+                    <AdminGuard>
+                        <AdminLayout />
+                      </AdminGuard>
+                    }>
+                    
+                    <Route index element={<Navigate to="orders" replace />} />
+                    <Route path="orders" element={<AdminOrders />} />
+                    <Route path="products" element={<AdminProducts />} />
+                    <Route path="enquiries" element={<AdminEnquiries />} />
+                    <Route path="*" element={<Navigate to="orders" replace />} />
+                  </Route>
 
-              {/* Storefront */}
-              <Route element={<Layout />}>
-                <Route index element={<Home />} />
-                <Route path="shop" element={<Shop />} />
-                <Route path="shop/:slug" element={<ProductDetail />} />
-                <Route path="story" element={<Story />} />
-                <Route path="gallery" element={<Gallery />} />
-                <Route path="bespoke" element={<Bespoke />} />
-                <Route path="contact" element={<Contact />} />
-                <Route path="cart" element={<Cart />} />
-                <Route path="checkout" element={<Checkout />} />
-                <Route path="order/:reference" element={<OrderSuccess />} />
-                <Route path="track-order" element={<TrackOrder />} />
-                <Route path="account" element={<Account />} />
-                <Route path="privacy-policy" element={<PrivacyPolicy />} />
-                <Route path="terms-conditions" element={<TermsConditions />} />
-                <Route path="*" element={<NotFound />} />
-              </Route>
-            </Routes>
-          </BrowserRouter>
-        </CartProvider>
-      </AuthProvider>
+                  {/* Storefront */}
+                  <Route element={<Layout />}>
+                    <Route index element={<Home />} />
+                    <Route path="shop" element={<Shop />} />
+                    <Route path="shop/:slug" element={<ProductDetail />} />
+                    <Route path="story" element={<Story />} />
+                    <Route path="gallery" element={<Gallery />} />
+                    <Route path="bespoke" element={<Bespoke />} />
+                    <Route path="contact" element={<Contact />} />
+                    <Route path="cart" element={<Cart />} />
+                    <Route path="checkout" element={<Checkout />} />
+                    <Route path="order/:reference" element={<OrderSuccess />} />
+                    <Route path="track-order" element={<TrackOrder />} />
+                    <Route path="account" element={<Account />} />
+                    <Route path="reset-password" element={<ResetPassword />} />
+                    <Route path="privacy-policy" element={<PrivacyPolicy />} />
+                    <Route path="terms-conditions" element={<TermsConditions />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Route>
+                </Routes>
+              </BrowserRouter>
+            </CartProvider>
+          </WishlistProvider>
+        </AuthProvider>
+      </ToastProvider>
     </ThemeProvider>);
 
 }

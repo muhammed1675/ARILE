@@ -209,7 +209,8 @@ export const CATEGORY_LABELS: Record<string, string> = {
   kaftan: 'Kaftan',
   buba: 'Buba & Sokoto',
   womens: "Women's",
-  accessories: 'Accessories'
+  accessories: 'Accessories',
+  fabric: 'Adire Fabric'
 };
 
 export function getProductBySlug(slug: string): Product | undefined {

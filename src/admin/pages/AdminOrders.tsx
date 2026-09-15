@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { AlertCircle, PackageSearch } from 'lucide-react';
+import { AlertCircle, PackageSearch, ChevronDown, MapPin } from 'lucide-react';
 import { adminGetOrders, adminUpdateOrderStatus, backendReady } from '../../lib/admin-api';
 import { formatDate, formatNaira } from '../../lib/format';
+import { useToast } from '../../contexts/ToastContext';
 import { Order, OrderStatus } from '../../types';
 import { usePageMeta } from '../../hooks/usePageMeta';
 import { SITE } from '../../data/site';
@@ -35,17 +36,20 @@ const statusTone: Record<OrderStatus, string> = {
 
 export function AdminOrders() {
   usePageMeta(`Orders — ${SITE.name} Admin`);
+  const toast = useToast();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
 
   useEffect(() => {
     adminGetOrders().then((res) => {
       if (res.ok && res.data) setOrders(res.data);else
-      setError(res.message ?? 'Could not load orders.');
+      toast.error(res.message ?? 'Could not load orders.');
       setLoading(false);
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const onStatusChange = async (order: Order, status: OrderStatus) => {
@@ -55,10 +59,22 @@ export function AdminOrders() {
     const result = await adminUpdateOrderStatus(order.id, status);
     if (!result.ok) {
       setOrders((list) => list.map((o) => o.id === order.id ? { ...o, status: prev } : o));
-      setError(result.message ?? 'Could not update the order.');
+      toast.error(result.message ?? 'Could not update the order.');
+    } else {
+      toast.success(`${order.reference} marked ${statusLabel[status].toLowerCase()}.`);
     }
     setSavingId(null);
   };
+
+  const visible = orders.filter((o) => {
+    const q = query.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      o.reference.toLowerCase().includes(q) ||
+      o.customer.fullName.toLowerCase().includes(q) ||
+      o.customer.email.toLowerCase().includes(q));
+
+  });
 
   if (!backendReady) {
     return (
@@ -68,14 +84,17 @@ export function AdminOrders() {
 
   return (
     <div>
-      <h1 className="font-serif text-2xl">Orders</h1>
-
-      {error &&
-      <p className="mt-4 flex items-start gap-2.5 border border-danger/40 bg-danger/5 p-4 text-sm text-danger">
-          <AlertCircle size={16} strokeWidth={1.5} className="mt-0.5 shrink-0" />
-          {error}
-        </p>
-      }
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <h1 className="font-serif text-2xl">Orders</h1>
+        {orders.length > 0 &&
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search reference, name or email…"
+          className="w-64 max-w-full border border-line bg-canvas px-3.5 py-2 text-sm text-ink placeholder:text-subtle transition-colors duration-200 focus:border-accent focus:outline-none" />
+        
+        }
+      </div>
 
       {loading ?
       <div className="mt-6 space-y-3">
@@ -86,45 +105,112 @@ export function AdminOrders() {
       orders.length === 0 ?
       <EmptyState /> :
 
-      <div className="mt-6 overflow-x-auto border border-line">
-          <table className="w-full min-w-[720px] border-collapse text-sm">
-            <thead>
-              <tr className="border-b border-line bg-surface text-left text-[10px] uppercase tracking-widest text-subtle">
-                <th className="px-4 py-3 font-normal">Reference</th>
-                <th className="px-4 py-3 font-normal">Customer</th>
-                <th className="px-4 py-3 font-normal">Placed</th>
-                <th className="px-4 py-3 font-normal text-right">Total</th>
-                <th className="px-4 py-3 font-normal">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {orders.map((order) =>
-            <tr key={order.id} className="border-b border-line last:border-b-0">
-                  <td className="px-4 py-3 font-serif text-accent">{order.reference}</td>
-                  <td className="px-4 py-3">
-                    <p className="text-ink">{order.customer.fullName}</p>
-                    <p className="text-[11px] text-subtle">{order.customer.email}</p>
-                  </td>
-                  <td className="px-4 py-3 text-subtle">{formatDate(order.createdAt)}</td>
-                  <td className="px-4 py-3 text-right tabular-nums">{formatNaira(order.total)}</td>
-                  <td className="px-4 py-3">
-                    <select
+      <div className="mt-6 divide-y divide-line border border-line">
+          <div className="hidden bg-surface px-4 py-3 text-[10px] uppercase tracking-widest text-subtle md:grid md:grid-cols-[1.1fr_1.4fr_1fr_0.9fr_1.2fr_1.5rem]">
+            <span>Reference</span>
+            <span>Customer</span>
+            <span>Placed</span>
+            <span className="text-right">Total</span>
+            <span>Status</span>
+            <span />
+          </div>
+          {visible.map((order) => {
+          const isOpen = expanded === order.id;
+          return (
+            <div key={order.id}>
+                <button
+                type="button"
+                onClick={() => setExpanded(isOpen ? null : order.id)}
+                aria-expanded={isOpen}
+                className="grid w-full grid-cols-2 gap-y-2 px-4 py-3 text-left text-sm transition-colors duration-150 hover:bg-surface md:grid-cols-[1.1fr_1.4fr_1fr_0.9fr_1.2fr_1.5rem] md:items-center md:gap-y-0">
+                
+                  <span className="font-serif text-accent">{order.reference}</span>
+                  <span className="order-3 md:order-none">
+                    <span className="block text-ink">{order.customer.fullName}</span>
+                    <span className="block text-[11px] text-subtle">{order.customer.email}</span>
+                  </span>
+                  <span className="order-4 text-subtle md:order-none">
+                    {formatDate(order.createdAt)}
+                  </span>
+                  <span className="order-2 text-right tabular-nums md:order-none">
+                    {formatNaira(order.total)}
+                  </span>
+                  <span className={`order-5 text-[11px] uppercase tracking-widest md:order-none ${statusTone[order.status]}`}>
+                    {statusLabel[order.status]}
+                  </span>
+                  <ChevronDown
+                  size={15}
+                  strokeWidth={1.75}
+                  className={`order-6 shrink-0 text-subtle transition-transform duration-200 md:order-none md:justify-self-end ${isOpen ? 'rotate-180' : ''}`} />
+                
+                </button>
+
+                {isOpen &&
+              <div className="border-t border-line bg-surface px-4 py-5">
+                    <div className="grid gap-6 md:grid-cols-2">
+                      <div>
+                        <p className="text-[10px] uppercase tracking-widest text-subtle">Items</p>
+                        <ul className="mt-2.5 space-y-2">
+                          {order.items.map((item) =>
+                      <li key={`${item.productId}-${item.size}`} className="flex items-center gap-2.5">
+                              <img src={item.image} alt="" className="h-10 w-8 shrink-0 object-cover" />
+                              <span className="text-xs text-muted">
+                                {item.name} · {item.size} · {item.color} · ×{item.quantity} ·{' '}
+                                {formatNaira(item.price * item.quantity)}
+                              </span>
+                            </li>
+                      )}
+                        </ul>
+                      </div>
+                      <div>
+                        <p className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-subtle">
+                          <MapPin size={11} strokeWidth={1.75} />
+                          Ship to
+                        </p>
+                        <p className="mt-2.5 text-xs leading-relaxed text-muted">
+                          {order.customer.fullName}
+                          <br />
+                          {order.customer.phone}
+                          <br />
+                          {order.customer.address}, {order.customer.city},{' '}
+                          {order.customer.state}, {order.customer.country}
+                        </p>
+                        {order.customer.notes &&
+                    <p className="mt-2.5 text-xs italic text-subtle">
+                            “{order.customer.notes}”
+                          </p>
+                    }
+                      </div>
+                    </div>
+
+                    <div className="mt-5 flex items-center gap-3 border-t border-line pt-5">
+                      <label htmlFor={`status-${order.id}`} className="text-[10px] uppercase tracking-widest text-subtle">
+                        Update status
+                      </label>
+                      <select
+                    id={`status-${order.id}`}
                     value={order.status}
                     disabled={savingId === order.id}
                     onChange={(e) => onStatusChange(order, e.target.value as OrderStatus)}
                     className={`border border-line bg-canvas px-2.5 py-1.5 text-[12px] transition-colors duration-200 focus:border-accent focus:outline-none ${statusTone[order.status]}`}>
                     
-                      {statusOptions.map((s) =>
+                        {statusOptions.map((s) =>
                     <option key={s} value={s}>
-                          {statusLabel[s]}
-                        </option>
+                            {statusLabel[s]}
+                          </option>
                     )}
-                    </select>
-                  </td>
-                </tr>
-            )}
-            </tbody>
-          </table>
+                      </select>
+                    </div>
+                  </div>
+              }
+              </div>);
+
+        })}
+          {visible.length === 0 &&
+        <p className="px-4 py-8 text-center text-sm text-muted">
+              No orders match “{query}”.
+            </p>
+        }
         </div>
       }
     </div>);

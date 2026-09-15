@@ -1,4 +1,4 @@
-export type Category = 'agbada' | 'kaftan' | 'buba' | 'womens' | 'accessories';
+export type Category = 'agbada' | 'kaftan' | 'buba' | 'womens' | 'accessories' | 'fabric';
 
 export type Availability = 'in_stock' | 'made_to_order' | 'sold_out';
 

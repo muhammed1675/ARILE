@@ -103,9 +103,6 @@ export function Footer() {
                     <ArrowRight size={18} strokeWidth={1.5} />
                   </button>
                 </div>
-                {status === 'error' &&
-              <p className="mt-2 text-xs text-danger">{message}</p>
-              }
               </>
             }
           </form>

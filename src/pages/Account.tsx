@@ -1,29 +1,21 @@
-import React, { useEffect, useState } from 'react';
-import { LogOut, Package, AlertCircle, Check, Phone } from 'lucide-react';
+import React, { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { LogOut, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import { usePageMeta } from '../hooks/usePageMeta';
-import { getMyOrders } from '../lib/api';
-import { formatNaira, formatDate } from '../lib/format';
 import { SITE } from '../data/site';
-import { Order } from '../types';
 import { Button } from '../components/ui/Button';
+import { OrdersTab } from '../components/account/OrdersTab';
+import { ProfileTab } from '../components/account/ProfileTab';
+import { AddressesTab } from '../components/account/AddressesTab';
+import { WishlistTab } from '../components/account/WishlistTab';
+import { classNames } from '../lib/format';
 
 const inputClass =
 'w-full border border-line bg-canvas px-4 py-3 text-sm text-ink placeholder:text-subtle ' +
 'transition-colors duration-200 focus:border-accent focus:outline-none';
 
-const statusLabel: Record<string, string> = {
-  pending: 'Awaiting payment',
-  paid: 'Paid',
-  in_production: 'In production',
-  shipped: 'Shipped',
-  delivered: 'Delivered',
-  cancelled: 'Cancelled'
-};
-
-// A permissive but real phone check: optional leading +, then 7-15 digits.
-// Loose on purpose — customers order from many countries — but blocks
-// obviously-empty or junk input so it's not a rubber-stamp requirement.
 const PHONE_PATTERN = /^\+?[0-9]{7,15}$/;
 
 function GoogleIcon() {
@@ -38,24 +30,21 @@ function GoogleIcon() {
 }
 
 function AuthPanel() {
-  const { signIn, signUp, signInWithGoogle, enabled } = useAuth();
+  const { signIn, signUp, signInWithGoogle, requestPasswordReset, enabled } = useAuth();
+  const toast = useToast();
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [googleBusy, setGoogleBusy] = useState(false);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setNotice(null);
 
     if (mode === 'signup' && !PHONE_PATTERN.test(phone.trim())) {
-      setError('Enter a valid phone number — digits only, 7 to 15 of them.');
+      toast.error('Enter a valid phone number — digits only, 7 to 15 of them.');
       return;
     }
 
@@ -65,23 +54,32 @@ function AuthPanel() {
     await signIn(email, password) :
     await signUp(email, password, fullName, phone.trim());
 
-    if (result.error) setError(result.error);else
+    if (result.error) toast.error(result.error);else
     if (mode === 'signup')
-    setNotice('Check your inbox to confirm your email, then sign in.');
+    toast.success('Check your inbox to confirm your email, then sign in.');
 
     setBusy(false);
   };
 
   const continueWithGoogle = async () => {
-    setError(null);
     setGoogleBusy(true);
     const result = await signInWithGoogle();
     if (result.error) {
-      setError(result.error);
+      toast.error(result.error);
       setGoogleBusy(false);
     }
     // On success the browser is redirected to Google, so no further
     // state update happens here.
+  };
+
+  const forgotPassword = async () => {
+    if (!email.trim()) {
+      toast.error('Enter your email above first, then tap "Forgot password?" again.');
+      return;
+    }
+    const result = await requestPasswordReset(email.trim());
+    if (result.error) toast.error(result.error);else
+    toast.success('Check your inbox for a link to reset your password.');
   };
 
   return (
@@ -173,9 +171,20 @@ function AuthPanel() {
         }
 
         <div>
-          <label htmlFor="a-password" className="mb-2 block text-[10px] uppercase tracking-widest text-subtle">
-            Password
-          </label>
+          <div className="mb-2 flex items-center justify-between gap-4">
+            <label htmlFor="a-password" className="block text-[10px] uppercase tracking-widest text-subtle">
+              Password
+            </label>
+            {mode === 'signin' &&
+            <button
+              type="button"
+              onClick={forgotPassword}
+              className="text-[10px] uppercase tracking-widest text-accent underline-offset-4 hover:underline">
+              
+                Forgot password?
+              </button>
+            }
+          </div>
           <input
             id="a-password"
             type="password"
@@ -188,19 +197,6 @@ function AuthPanel() {
           
         </div>
 
-        {error &&
-        <p className="flex items-start gap-2.5 border border-danger/40 bg-danger/5 p-4 text-sm text-danger">
-            <AlertCircle size={16} strokeWidth={1.5} className="mt-0.5 shrink-0" />
-            {error}
-          </p>
-        }
-        {notice &&
-        <p className="flex items-start gap-2.5 border border-success/40 bg-success/5 p-4 text-sm text-success">
-            <Check size={16} strokeWidth={1.5} className="mt-0.5 shrink-0" />
-            {notice}
-          </p>
-        }
-
         <Button type="submit" size="lg" fullWidth disabled={busy || !enabled}>
           {busy ? 'One moment…' : mode === 'signin' ? 'Sign in' : 'Create account'}
         </Button>
@@ -210,11 +206,7 @@ function AuthPanel() {
         {mode === 'signin' ? 'No account yet?' : 'Already have an account?'}{' '}
         <button
           type="button"
-          onClick={() => {
-            setMode(mode === 'signin' ? 'signup' : 'signin');
-            setError(null);
-            setNotice(null);
-          }}
+          onClick={() => setMode(mode === 'signin' ? 'signup' : 'signin')}
           className="text-accent underline-offset-4 transition-opacity duration-200 hover:opacity-75 hover:underline">
           
           {mode === 'signin' ? 'Create one' : 'Sign in'}
@@ -232,30 +224,26 @@ function AuthPanel() {
  */
 function RequirePhonePanel() {
   const { savePhone, signOut } = useAuth();
+  const toast = useToast();
   const [phone, setPhone] = useState('');
-  const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
 
     if (!PHONE_PATTERN.test(phone.trim())) {
-      setError('Enter a valid phone number — digits only, 7 to 15 of them.');
+      toast.error('Enter a valid phone number — digits only, 7 to 15 of them.');
       return;
     }
 
     setBusy(true);
     const result = await savePhone(phone.trim());
-    if (result.error) setError(result.error);
     setBusy(false);
+    if (result.error) toast.error(result.error);
   };
 
   return (
     <div className="mx-auto max-w-md">
-      <div className="mx-auto grid h-12 w-12 place-items-center rounded-full border border-line text-accent">
-        <Phone size={19} strokeWidth={1.5} />
-      </div>
       <h1 className="mt-5 text-center font-serif text-[2rem] leading-none sm:text-4xl">
         One last thing
       </h1>
@@ -282,13 +270,6 @@ function RequirePhonePanel() {
           
         </div>
 
-        {error &&
-        <p className="flex items-start gap-2.5 border border-danger/40 bg-danger/5 p-4 text-sm text-danger">
-            <AlertCircle size={16} strokeWidth={1.5} className="mt-0.5 shrink-0" />
-            {error}
-          </p>
-        }
-
         <Button type="submit" size="lg" fullWidth disabled={busy}>
           {busy ? 'Saving…' : 'Save and continue'}
         </Button>
@@ -307,20 +288,20 @@ function RequirePhonePanel() {
 
 }
 
+const tabs = [
+{ id: 'orders', label: 'Orders' },
+{ id: 'wishlist', label: 'Wishlist' },
+{ id: 'addresses', label: 'Addresses' },
+{ id: 'profile', label: 'Profile' }] as
+const;
+
+type TabId = (typeof tabs)[number]['id'];
+
 export function Account() {
   usePageMeta(`Account — ${SITE.name}`);
   const { user, loading, needsPhone, checkingProfile, signOut } = useAuth();
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [ordersLoading, setOrdersLoading] = useState(false);
-
-  useEffect(() => {
-    if (!user) return;
-    setOrdersLoading(true);
-    getMyOrders(user.id).then((res) => {
-      if (res.ok && res.data) setOrders(res.data);
-      setOrdersLoading(false);
-    });
-  }, [user]);
+  const [params, setParams] = useSearchParams();
+  const active = (params.get('tab') as TabId) ?? 'orders';
 
   if (loading || (user && checkingProfile)) {
     return (
@@ -352,7 +333,7 @@ export function Account() {
         <div>
           <p className="text-[10px] uppercase tracking-widest text-accent">Your account</p>
           <h1 className="mt-2.5 font-serif text-[2.25rem] leading-none sm:text-4xl">
-            {user.user_metadata?.full_name as string || user.email}
+            {(user.user_metadata?.full_name as string) || user.email}
           </h1>
         </div>
         <button
@@ -365,70 +346,31 @@ export function Account() {
         </button>
       </header>
 
-      <section className="pt-10">
-        <h2 className="font-serif text-2xl">Your orders</h2>
+      <div className="hide-scrollbar -mx-5 mt-8 flex gap-1 overflow-x-auto border-b border-line px-5 md:mx-0 md:px-0">
+        {tabs.map((tab) =>
+        <button
+          key={tab.id}
+          type="button"
+          onClick={() => setParams({ tab: tab.id })}
+          aria-current={active === tab.id ? 'page' : undefined}
+          className={classNames(
+            'whitespace-nowrap border-b-2 px-4 py-3 text-[11px] uppercase tracking-widest transition-colors duration-200',
+            active === tab.id ?
+            'border-accent text-accent' :
+            'border-transparent text-muted hover:text-ink'
+          )}>
+          
+            {tab.label}
+          </button>
+        )}
+      </div>
 
-        {ordersLoading ?
-        <div className="mt-6 space-y-3">
-            {Array.from({ length: 2 }).map((_, i) =>
-          <div key={i} className="h-24 animate-pulse bg-surface-2" />
-          )}
-          </div> :
-        orders.length === 0 ?
-        <div className="mt-8 border border-line bg-surface p-10 text-center">
-            <div className="mx-auto grid h-12 w-12 place-items-center rounded-full border border-line text-subtle">
-              <Package size={19} strokeWidth={1.25} />
-            </div>
-            <p className="mt-5 font-serif text-xl">No orders yet</p>
-            <p className="mx-auto mt-2 max-w-sm text-sm font-light text-muted">
-              When you place an order it will appear here with its production status.
-            </p>
-            <div className="mt-7">
-              <Button as="link" to="/shop">
-                Browse the collection
-              </Button>
-            </div>
-          </div> :
-
-        <ul className="mt-6 space-y-3">
-            {orders.map((order) =>
-          <li key={order.id} className="border border-line bg-surface p-5 md:p-6">
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div>
-                    <p className="font-serif text-xl text-accent">{order.reference}</p>
-                    <p className="mt-1 text-[10px] uppercase tracking-widest text-subtle">
-                      {formatDate(order.createdAt)} · {order.items.length}{' '}
-                      {order.items.length === 1 ? 'piece' : 'pieces'}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-serif text-xl tabular-nums">
-                      {formatNaira(order.total)}
-                    </p>
-                    <p className="mt-1 text-[10px] uppercase tracking-widest text-muted">
-                      {statusLabel[order.status] ?? order.status}
-                    </p>
-                  </div>
-                </div>
-
-                <ul className="mt-4 flex flex-wrap gap-2 border-t border-line pt-4">
-                  {order.items.map((item) =>
-              <li
-                key={`${item.productId}-${item.size}`}
-                className="flex items-center gap-2.5 bg-surface-2 px-3 py-2">
-                
-                      <img src={item.image} alt="" className="h-9 w-7 object-cover" />
-                      <span className="text-[11px] text-muted">
-                        {item.name} · {item.size} · ×{item.quantity}
-                      </span>
-                    </li>
-              )}
-                </ul>
-              </li>
-          )}
-          </ul>
-        }
-      </section>
+      <div className="pt-10">
+        {active === 'orders' && <OrdersTab />}
+        {active === 'wishlist' && <WishlistTab />}
+        {active === 'addresses' && <AddressesTab />}
+        {active === 'profile' && <ProfileTab />}
+      </div>
     </div>);
 
 }

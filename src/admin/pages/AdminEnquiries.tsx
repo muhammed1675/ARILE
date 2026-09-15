@@ -6,6 +6,7 @@ import {
   backendReady } from
 '../../lib/admin-api';
 import { formatDate } from '../../lib/format';
+import { useToast } from '../../contexts/ToastContext';
 import { Enquiry } from '../../types';
 import { usePageMeta } from '../../hooks/usePageMeta';
 import { SITE } from '../../data/site';
@@ -20,15 +21,16 @@ export function AdminEnquiries() {
   usePageMeta(`Enquiries — ${SITE.name} Admin`);
   const [enquiries, setEnquiries] = useState<Enquiry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
+  const toast = useToast();
 
   useEffect(() => {
     adminGetEnquiries().then((res) => {
       if (res.ok && res.data) setEnquiries(res.data);else
-      setError(res.message ?? 'Could not load enquiries.');
+      toast.error(res.message ?? 'Could not load enquiries.');
       setLoading(false);
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const markHandled = async (e: Enquiry, handled: boolean) => {
@@ -36,7 +38,7 @@ export function AdminEnquiries() {
     const result = await adminSetEnquiryHandled(e.id, handled);
     if (!result.ok) {
       setEnquiries((list) => list.map((x) => x.id === e.id ? { ...x, handled: e.handled } : x));
-      setError(result.message ?? 'Could not update the enquiry.');
+      toast.error(result.message ?? 'Could not update the enquiry.');
     }
   };
 
@@ -52,13 +54,6 @@ export function AdminEnquiries() {
   return (
     <div>
       <h1 className="font-serif text-2xl">Enquiries</h1>
-
-      {error &&
-      <p className="mt-4 flex items-start gap-2.5 border border-danger/40 bg-danger/5 p-4 text-sm text-danger">
-          <AlertCircle size={16} strokeWidth={1.5} className="mt-0.5 shrink-0" />
-          {error}
-        </p>
-      }
 
       {loading ?
       <div className="mt-6 space-y-3">

@@ -65,7 +65,7 @@ create table if not exists public.products (
   name             text not null,
   meaning          text,
   category         text not null check (
-                     category in ('agbada','kaftan','buba','womens','accessories')
+                     category in ('agbada','kaftan','buba','womens','accessories','fabric')
                    ),
   price            numeric(12,2) not null,
   compare_at_price numeric(12,2),
@@ -170,6 +170,68 @@ create policy "newsletter_insert_any" on public.newsletter_subscribers
   for insert with check (true);
 
 -- =====================================================================
+-- ADDRESSES  (saved delivery addresses per customer)
+-- =====================================================================
+create table if not exists public.addresses (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null references auth.users on delete cascade,
+  label       text not null default 'Home',
+  full_name   text not null,
+  phone       text not null,
+  address     text not null,
+  city        text not null,
+  state       text not null,
+  country     text not null default 'Nigeria',
+  is_default  boolean not null default false,
+  created_at  timestamptz not null default now()
+);
+
+alter table public.addresses enable row level security;
+
+drop policy if exists "addresses_all_own" on public.addresses;
+create policy "addresses_all_own" on public.addresses
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+create index if not exists addresses_user_idx on public.addresses (user_id);
+
+-- Only one default address per customer.
+create or replace function public.enforce_single_default_address()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  if new.is_default then
+    update public.addresses
+    set is_default = false
+    where user_id = new.user_id and id <> new.id;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists on_address_default on public.addresses;
+create trigger on_address_default
+  after insert or update of is_default on public.addresses
+  for each row when (new.is_default) execute function public.enforce_single_default_address();
+
+-- =====================================================================
+-- WISHLIST  (saved pieces per customer)
+-- =====================================================================
+create table if not exists public.wishlist_items (
+  user_id    uuid not null references auth.users on delete cascade,
+  product_id text not null references public.products on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (user_id, product_id)
+);
+
+alter table public.wishlist_items enable row level security;
+
+drop policy if exists "wishlist_all_own" on public.wishlist_items;
+create policy "wishlist_all_own" on public.wishlist_items
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- =====================================================================
 -- ADMIN ACCESS
 -- Powers the /admin dashboard (orders, catalogue, enquiries).
 -- Run this section even on a project that already has the tables above —
@@ -223,6 +285,16 @@ create policy "enquiries_update_admin" on public.enquiries
 drop policy if exists "newsletter_select_admin" on public.newsletter_subscribers;
 create policy "newsletter_select_admin" on public.newsletter_subscribers
   for select using (public.is_admin());
+
+-- Product photo uploads — after creating the `products` Storage bucket in
+-- the dashboard (see setup.md §9), run this so only admins can upload,
+-- replace or remove files in it. Public *reading* of files is handled by
+-- the bucket's own "Public" flag, not by this policy.
+drop policy if exists "product_images_admin_write" on storage.objects;
+create policy "product_images_admin_write" on storage.objects
+  for all
+  using (bucket_id = 'products' and public.is_admin())
+  with check (bucket_id = 'products' and public.is_admin());
 
 -- =====================================================================
 -- To make yourself an admin after signing up through the storefront's

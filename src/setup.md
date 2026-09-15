@@ -385,35 +385,42 @@ Because the app uses client-side routing, add a rewrite so every path serves `in
 
 ## 9. Managing the catalogue
 
-### Adding a product
+### Adding, editing or removing a product
 
-**Table Editor → products → Insert row.** The shape:
+Sign in at `/admin` (see §7 to make your account an admin) → **Products → New
+piece**. You can upload photos straight from that form — drag in files, set the
+price, sizes and stock, mark it Featured or hide it from the shop — no SQL needed.
+The old approach (editing rows directly in **Table Editor → products**) still
+works if you ever need to bulk-edit, but the admin form is the normal way to do
+this day to day now.
 
-| Column | Example |
-|---|---|
-| `id` | `p-new-piece` |
-| `slug` | `new-piece-agbada` (this becomes the URL) |
-| `name` | `Olúwáseyi` |
-| `meaning` | `God made this` |
-| `category` | one of `agbada`, `kaftan`, `buba`, `womens`, `accessories` |
-| `price` | `750000` (plain number, Naira) |
-| `compare_at_price` | `890000` or leave null |
-| `images` | `["https://.../front.jpg", "https://.../detail.jpg"]` |
-| `variants` | `[{"size":"M","stock":3},{"size":"L","stock":2}]` |
-| `colors` | `["Ivory","Indigo"]` |
-| `availability` | `in_stock`, `made_to_order` or `sold_out` |
-| `featured` | `true` to show it on the home page |
-| `is_active` | `false` hides it without deleting it |
+**One-time setup this needs — the photo uploader talks to Supabase Storage:**
 
-### Hosting product photos
-
-**Storage → New bucket** named `products`, set it **Public**. Upload, then copy each file's public URL into the `images` array.
+1. **Storage → New bucket** named `products`, set it **Public**.
+2. Re-run `schema.sql` (it's idempotent) — it adds the policy that lets admin
+   accounts upload to that bucket. Skipping this step means uploads fail with a
+   permissions error even though the bucket exists.
 
 Shoot portrait (3:4) against a consistent backdrop — the grid assumes that ratio.
 
+**Categories:** `agbada`, `kaftan`, `buba`, `womens`, `accessories`, `fabric` —
+that last one is for adire material sold by the yard rather than a finished
+garment. If your Supabase project's `products` table was created before this
+category existed, run this once to allow it:
+
+```sql
+alter table public.products drop constraint products_category_check;
+alter table public.products add constraint products_category_check
+  check (category in ('agbada','kaftan','buba','womens','accessories','fabric'));
+```
+
 ### Managing orders
 
-**Table Editor → orders.** Move `status` through `paid → in_production → shipped → delivered` as work progresses. Customers see this on their account page.
+**`/admin` → Orders.** Click any row to see the items and shipping address, and
+move `status` through `paid → in_production → shipped → delivered` as work
+progresses — customers see this update on their account page and on
+`/track-order`. Table Editor works too, but the admin page is easier since it
+shows you what's actually in the order.
 
 ---
 
