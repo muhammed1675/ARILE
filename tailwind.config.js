@@ -22,6 +22,25 @@ export default {
         clay: 'rgb(var(--c-clay) / <alpha-value>)',
         success: 'rgb(var(--c-success) / <alpha-value>)',
         danger: 'rgb(var(--c-danger) / <alpha-value>)',
+
+        /* Admin dashboard — scoped palette, only used under .admin-dash */
+        dash: {
+          bg: 'rgb(var(--dash-bg) / <alpha-value>)',
+          surface: 'rgb(var(--dash-surface) / <alpha-value>)',
+          'surface-2': 'rgb(var(--dash-surface-2) / <alpha-value>)',
+          border: 'rgb(var(--dash-border) / <alpha-value>)',
+          fg: 'rgb(var(--dash-fg) / <alpha-value>)',
+          muted: 'rgb(var(--dash-muted) / <alpha-value>)',
+          'muted-fg': 'rgb(var(--dash-muted-fg) / <alpha-value>)',
+          primary: 'rgb(var(--dash-primary) / <alpha-value>)',
+          'primary-fg': 'rgb(var(--dash-primary-fg) / <alpha-value>)',
+          accent: 'rgb(var(--dash-accent) / <alpha-value>)',
+          'accent-fg': 'rgb(var(--dash-accent-fg) / <alpha-value>)',
+          destructive: 'rgb(var(--dash-destructive) / <alpha-value>)',
+          success: 'rgb(var(--dash-success) / <alpha-value>)',
+          warning: 'rgb(var(--dash-warning) / <alpha-value>)',
+          ring: 'rgb(var(--dash-ring) / <alpha-value>)',
+        },
       },
       fontFamily: {
         serif: ['"Cormorant Garamond"', 'Georgia', 'serif'],

@@ -30,6 +30,7 @@ import { NotFound } from './pages/NotFound';
 import { AdminGuard } from './admin/AdminGuard';
 import { AdminLayout } from './admin/AdminLayout';
 import { AdminLogin } from './admin/pages/AdminLogin';
+import { AdminOverview } from './admin/pages/AdminOverview';
 import { AdminOrders } from './admin/pages/AdminOrders';
 import { AdminProducts } from './admin/pages/AdminProducts';
 import { AdminEnquiries } from './admin/pages/AdminEnquiries';
@@ -80,11 +81,11 @@ export function App() {
                       </AdminGuard>
                     }>
                     
-                    <Route index element={<Navigate to="orders" replace />} />
+                    <Route index element={<AdminOverview />} />
                     <Route path="orders" element={<AdminOrders />} />
                     <Route path="products" element={<AdminProducts />} />
                     <Route path="enquiries" element={<AdminEnquiries />} />
-                    <Route path="*" element={<Navigate to="orders" replace />} />
+                    <Route path="*" element={<Navigate to="/admin" replace />} />
                   </Route>
 
                   {/* Storefront */}

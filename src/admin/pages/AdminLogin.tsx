@@ -29,7 +29,7 @@ export function AdminLogin() {
   }, [email, password]);
 
   if (!loading && user && resolved && isAdmin) {
-    return <Navigate to="/admin/orders" replace />;
+    return <Navigate to="/admin" replace />;
   }
 
   const submit = async (e: React.FormEvent) => {
